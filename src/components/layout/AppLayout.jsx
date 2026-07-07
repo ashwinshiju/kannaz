@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import { cn } from '@/lib/utils';
@@ -7,11 +7,12 @@ import { cn } from '@/lib/utils';
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
 
   // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);
-  }, []);
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,8 +38,7 @@ export default function AppLayout() {
       />
       <main className={cn(
         "pt-16 min-h-screen transition-all duration-300",
-        "lg:ml-[250px]",
-        collapsed && "lg:ml-[68px]"
+        collapsed ? "lg:ml-[68px]" : "lg:ml-[250px]"
       )}>
         <div className="p-4 lg:p-6">
           <Outlet />
