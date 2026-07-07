@@ -1,4 +1,4 @@
-/* eslint-env jest */
+/* global describe, test, expect, beforeEach, afterEach, jest */
 /**
  * Jest test suite for GPSService validation, trust scoring,
  * spoofing detection, and geofence hysteresis.

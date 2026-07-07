@@ -382,3 +382,64 @@ export class GPSService {
     this.geofence.reset();
   }
 }
+
+// ---------------------------------------------------------------------------
+// PURE VALIDATION ENTRY POINT (for hooks / state machines)
+// ---------------------------------------------------------------------------
+
+/**
+ * Validate a single raw GPS point against a bounded history window.
+ * Pure function — no side effects, no instance state.
+ *
+ * @param {Array} history — recent raw points (bounded window, e.g. last 50)
+ * @param {{ lat: number, lng: number, accuracy?: number, isMocked?: boolean }} raw
+ * @param {number} timestamp
+ * @param {object} [opts] — override defaults
+ * @returns {{ valid: boolean, point: object|null, errors: string[], warnings: string[] }}
+ */
+export function validateGeoPoint(history, raw, timestamp, opts = {}) {
+  const config = { ...GPS_DEFAULTS, ...opts };
+  const lat = raw.lat;
+  const lng = raw.lng;
+  const accuracy = raw.accuracy ?? null;
+  const isMocked = raw.isMocked ?? false;
+
+  const validation = validateCoordinates(lat, lng, {
+    nullIslandAllowed: config.nullIslandAllowed,
+  });
+  if (!validation.valid) {
+    return { valid: false, point: null, errors: validation.errors, warnings: validation.warnings };
+  }
+
+  const point = { lat, lng, accuracy, isMocked, timestamp };
+
+  // Jump detection against the previous point
+  const prev = history.length > 0 ? history[history.length - 1] : null;
+  const prevValidated = prev
+    ? { lat: prev.lat, lng: prev.lng, timestamp: prev.timestamp ?? timestamp - 1000 }
+    : null;
+  const jump = prevValidated ? detectGPSJump(prevValidated, point, config.maxRealisticSpeedKmh) : { isJump: false, impliedSpeedKmh: 0, distanceM: 0 };
+  point.isJump = jump.isJump;
+  point.impliedSpeedKmh = jump.impliedSpeedKmh;
+  point.distanceM = jump.distanceM;
+
+  // Accuracy-based confidence
+  point.confidence = accuracy != null && accuracy > config.maxAccuracyMeters ? 'low' : 'high';
+
+  // Spoofing detection across the history window
+  const historyWithPoint = [...history, point].slice(-20);
+  const spoof = detectSpoofing(historyWithPoint);
+  point.spoofed = spoof.isSpoofed;
+  point.spoofReasons = spoof.reasons;
+
+  // Trust score
+  point.trustScore = computeTrustScore({
+    accuracy,
+    isJump: point.isJump,
+    isMocked,
+    spoofed: spoof.isSpoofed,
+    confidence: point.confidence,
+  });
+
+  return { valid: true, point, errors: [], warnings: validation.warnings };
+}
