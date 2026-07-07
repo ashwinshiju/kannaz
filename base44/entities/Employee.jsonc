@@ -1,0 +1,68 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "emp_id": {
+      "type": "string",
+      "title": "Employee ID"
+    },
+    "full_name": {
+      "type": "string",
+      "title": "Full Name"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+    },
+    "mobile": {
+      "type": "string",
+      "title": "Mobile"
+    },
+    "department": {
+      "type": "string",
+      "title": "Department"
+    },
+    "designation": {
+      "type": "string",
+      "title": "Designation"
+    },
+    "manager_id": {
+      "type": "string",
+      "title": "Manager ID"
+    },
+    "default_vehicle_id": {
+      "type": "string",
+      "title": "Default Vehicle"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "manager",
+        "employee"
+      ],
+      "default": "employee",
+      "title": "Role"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "disabled"
+      ],
+      "default": "active",
+      "title": "Status"
+    },
+    "avatar_url": {
+      "type": "string",
+      "title": "Avatar URL"
+    }
+  },
+  "required": [
+    "emp_id",
+    "full_name",
+    "email",
+    "role"
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "name": "Location",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Location Name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "office",
+        "customer",
+        "warehouse",
+        "public",
+        "other"
+      ],
+      "title": "Category"
+    },
+    "address": {
+      "type": "string",
+      "title": "Address"
+    },
+    "latitude": {
+      "type": "number",
+      "title": "Latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "title": "Longitude"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active",
+      "title": "Status"
+    },
+    "is_favorite": {
+      "type": "boolean",
+      "default": false,
+      "title": "Favorite"
+    }
+  },
+  "required": [
+    "name",
+    "category",
+    "address"
+  ]
+}

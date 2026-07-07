@@ -1,0 +1,45 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "title": "Title"
+    },
+    "message": {
+      "type": "string",
+      "title": "Message"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "error",
+        "success",
+        "trip",
+        "maintenance",
+        "document"
+      ],
+      "title": "Type"
+    },
+    "target_user_id": {
+      "type": "string",
+      "title": "Target User"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "title": "Read"
+    },
+    "link": {
+      "type": "string",
+      "title": "Link"
+    }
+  },
+  "required": [
+    "title",
+    "message",
+    "type"
+  ]
+}

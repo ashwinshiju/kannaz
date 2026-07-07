@@ -1,0 +1,35 @@
+{
+  "name": "Department",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Department Name"
+    },
+    "code": {
+      "type": "string",
+      "title": "Department Code"
+    },
+    "manager_name": {
+      "type": "string",
+      "title": "Manager"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active",
+      "title": "Status"
+    }
+  },
+  "required": [
+    "name",
+    "code"
+  ]
+}

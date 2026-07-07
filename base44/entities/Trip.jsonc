@@ -1,0 +1,122 @@
+{
+  "name": "Trip",
+  "type": "object",
+  "properties": {
+    "trip_number": {
+      "type": "string",
+      "title": "Trip Number"
+    },
+    "employee_id": {
+      "type": "string",
+      "title": "Employee ID"
+    },
+    "employee_name": {
+      "type": "string",
+      "title": "Employee Name"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "title": "Vehicle ID"
+    },
+    "vehicle_name": {
+      "type": "string",
+      "title": "Vehicle Name"
+    },
+    "department": {
+      "type": "string",
+      "title": "Department"
+    },
+    "start_location": {
+      "type": "string",
+      "title": "Start Location"
+    },
+    "end_location": {
+      "type": "string",
+      "title": "End Location"
+    },
+    "start_lat": {
+      "type": "number",
+      "title": "Start Latitude"
+    },
+    "start_lng": {
+      "type": "number",
+      "title": "Start Longitude"
+    },
+    "end_lat": {
+      "type": "number",
+      "title": "End Latitude"
+    },
+    "end_lng": {
+      "type": "number",
+      "title": "End Longitude"
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "official",
+        "personal",
+        "maintenance"
+      ],
+      "default": "official",
+      "title": "Purpose"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "in_progress",
+        "completed",
+        "acknowledged",
+        "cancelled"
+      ],
+      "default": "created",
+      "title": "Status"
+    },
+    "start_odometer": {
+      "type": "number",
+      "title": "Start Odometer"
+    },
+    "end_odometer": {
+      "type": "number",
+      "title": "End Odometer"
+    },
+    "distance_km": {
+      "type": "number",
+      "title": "Distance (km)"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "title": "Duration (min)"
+    },
+    "started_at": {
+      "type": "string",
+      "title": "Started At"
+    },
+    "completed_at": {
+      "type": "string",
+      "title": "Completed At"
+    },
+    "acknowledged_at": {
+      "type": "string",
+      "title": "Acknowledged At"
+    },
+    "acknowledged_by": {
+      "type": "string",
+      "title": "Acknowledged By"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
+    "manager_id": {
+      "type": "string",
+      "title": "Manager ID"
+    }
+  },
+  "required": [
+    "employee_name",
+    "vehicle_name",
+    "start_location",
+    "end_location"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "name": "Setting",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "title": "Setting Key"
+    },
+    "value": {
+      "type": "string",
+      "title": "Setting Value"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "company",
+        "trip",
+        "notification",
+        "security",
+        "system"
+      ],
+      "title": "Category"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    }
+  },
+  "required": [
+    "key",
+    "value",
+    "category"
+  ]
+}

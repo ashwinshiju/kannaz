@@ -1,0 +1,80 @@
+{
+  "name": "Vehicle",
+  "type": "object",
+  "properties": {
+    "reg_no": {
+      "type": "string",
+      "title": "Registration No"
+    },
+    "name": {
+      "type": "string",
+      "title": "Vehicle Name"
+    },
+    "make": {
+      "type": "string",
+      "title": "Make"
+    },
+    "model": {
+      "type": "string",
+      "title": "Model"
+    },
+    "year": {
+      "type": "number",
+      "title": "Year"
+    },
+    "color": {
+      "type": "string",
+      "title": "Color"
+    },
+    "fuel_type": {
+      "type": "string",
+      "enum": [
+        "petrol",
+        "diesel",
+        "electric",
+        "hybrid",
+        "cng"
+      ],
+      "title": "Fuel Type"
+    },
+    "assigned_department": {
+      "type": "string",
+      "title": "Assigned Department"
+    },
+    "current_odometer": {
+      "type": "number",
+      "title": "Current Odometer (km)"
+    },
+    "insurance_expiry": {
+      "type": "string",
+      "format": "date",
+      "title": "Insurance Expiry"
+    },
+    "registration_expiry": {
+      "type": "string",
+      "format": "date",
+      "title": "Registration Expiry"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "in_use",
+        "maintenance",
+        "inactive"
+      ],
+      "default": "available",
+      "title": "Status"
+    },
+    "image_url": {
+      "type": "string",
+      "title": "Image URL"
+    }
+  },
+  "required": [
+    "reg_no",
+    "name",
+    "make",
+    "model"
+  ]
+}

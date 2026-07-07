@@ -1,0 +1,67 @@
+{
+  "name": "FuelRecord",
+  "type": "object",
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "title": "Vehicle ID"
+    },
+    "vehicle_name": {
+      "type": "string",
+      "title": "Vehicle Name"
+    },
+    "employee_id": {
+      "type": "string",
+      "title": "Employee ID"
+    },
+    "employee_name": {
+      "type": "string",
+      "title": "Employee Name"
+    },
+    "fuel_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Fuel Date"
+    },
+    "station": {
+      "type": "string",
+      "title": "Station"
+    },
+    "fuel_type": {
+      "type": "string",
+      "enum": [
+        "petrol",
+        "diesel",
+        "electric",
+        "cng"
+      ],
+      "title": "Fuel Type"
+    },
+    "litres": {
+      "type": "number",
+      "title": "Litres"
+    },
+    "cost": {
+      "type": "number",
+      "title": "Cost"
+    },
+    "odometer": {
+      "type": "number",
+      "title": "Odometer Reading"
+    },
+    "efficiency_kmpl": {
+      "type": "number",
+      "title": "Efficiency (km/l)"
+    },
+    "receipt_url": {
+      "type": "string",
+      "title": "Receipt URL"
+    }
+  },
+  "required": [
+    "vehicle_name",
+    "fuel_date",
+    "litres",
+    "cost"
+  ]
+}

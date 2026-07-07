@@ -1,0 +1,67 @@
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "title": "Vehicle ID"
+    },
+    "vehicle_name": {
+      "type": "string",
+      "title": "Vehicle Name"
+    },
+    "doc_type": {
+      "type": "string",
+      "enum": [
+        "insurance",
+        "registration",
+        "tire_certificate",
+        "battery_warranty",
+        "emission_test",
+        "fitness_certificate",
+        "other"
+      ],
+      "title": "Document Type"
+    },
+    "doc_number": {
+      "type": "string",
+      "title": "Document Number"
+    },
+    "issuer": {
+      "type": "string",
+      "title": "Issuer"
+    },
+    "issue_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Issue Date"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Expiry Date"
+    },
+    "file_url": {
+      "type": "string",
+      "title": "File URL"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "valid",
+        "expiring_soon",
+        "expired"
+      ],
+      "default": "valid",
+      "title": "Status"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "vehicle_name",
+    "doc_type"
+  ]
+}

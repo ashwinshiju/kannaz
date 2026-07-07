@@ -1,0 +1,53 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "user_name": {
+      "type": "string",
+      "title": "User"
+    },
+    "user_email": {
+      "type": "string",
+      "title": "Email"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "login",
+        "logout",
+        "create",
+        "update",
+        "delete",
+        "view",
+        "export",
+        "settings_change"
+      ],
+      "title": "Action"
+    },
+    "module": {
+      "type": "string",
+      "title": "Module"
+    },
+    "entity_type": {
+      "type": "string",
+      "title": "Entity Type"
+    },
+    "entity_id": {
+      "type": "string",
+      "title": "Entity ID"
+    },
+    "details": {
+      "type": "string",
+      "title": "Details"
+    },
+    "ip_address": {
+      "type": "string",
+      "title": "IP Address"
+    }
+  },
+  "required": [
+    "user_name",
+    "action",
+    "module"
+  ]
+}

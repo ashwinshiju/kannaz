@@ -1,0 +1,78 @@
+{
+  "name": "Maintenance",
+  "type": "object",
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "title": "Vehicle ID"
+    },
+    "vehicle_name": {
+      "type": "string",
+      "title": "Vehicle Name"
+    },
+    "service_type": {
+      "type": "string",
+      "enum": [
+        "oil_change",
+        "brakes",
+        "tires",
+        "battery",
+        "engine",
+        "transmission",
+        "general",
+        "inspection",
+        "other"
+      ],
+      "title": "Service Type"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    },
+    "cost": {
+      "type": "number",
+      "title": "Cost"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Scheduled Date"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Completed Date"
+    },
+    "odometer": {
+      "type": "number",
+      "title": "Odometer Reading"
+    },
+    "next_service_odometer": {
+      "type": "number",
+      "title": "Next Service Odometer"
+    },
+    "vendor": {
+      "type": "string",
+      "title": "Vendor"
+    },
+    "invoice_url": {
+      "type": "string",
+      "title": "Invoice URL"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "scheduled",
+      "title": "Status"
+    }
+  },
+  "required": [
+    "vehicle_name",
+    "service_type"
+  ]
+}
