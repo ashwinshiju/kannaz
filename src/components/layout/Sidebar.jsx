@@ -54,7 +54,7 @@ const navGroups = [
   }
 ];
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar({ collapsed, onToggle, className }) {
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState(navGroups.map(g => g.label));
 
@@ -68,7 +68,8 @@ export default function Sidebar({ collapsed, onToggle }) {
     <aside
       className={cn(
         "fixed left-0 top-0 z-40 h-screen bg-card border-r border-border flex flex-col transition-all duration-300",
-        collapsed ? "w-[68px]" : "w-[250px]"
+        collapsed ? "w-[68px]" : "w-[250px]",
+        className
       )}
     >
       {/* Logo */}

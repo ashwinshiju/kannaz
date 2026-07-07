@@ -21,16 +21,22 @@ export default function AppLayout() {
         <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Sidebar — hidden on mobile unless mobileOpen */}
-      <div className={cn("hidden lg:block")}>
-        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
-      </div>
-      <div className={cn(
-        "lg:hidden fixed z-40 transition-transform duration-300",
-        mobileOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <Sidebar collapsed={false} onToggle={() => setMobileOpen(false)} />
-      </div>
+      {/* Desktop sidebar */}
+      <Sidebar
+        collapsed={collapsed}
+        onToggle={() => setCollapsed(!collapsed)}
+        className="hidden lg:flex"
+      />
+
+      {/* Mobile sidebar */}
+      <Sidebar
+        collapsed={false}
+        onToggle={() => setMobileOpen(false)}
+        className={cn(
+          "lg:hidden",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      />
 
       <Topbar
         onMenuToggle={() => setMobileOpen(!mobileOpen)}
