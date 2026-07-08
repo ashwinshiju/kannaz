@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Users } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
@@ -48,12 +49,17 @@ export default function Employees() {
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const load = async () => {
     const items = await base44.entities.Employee.list();
     setData(items);
     setLoading(false);
   };
+
+  // The Actions column (edit/delete) is restricted to Manager role (and Admin).
+  const currentEmployee = data.find(e => e.email === user?.email);
+  const canManage = currentEmployee?.role === 'manager' || currentEmployee?.role === 'admin';
 
   useEffect(() => { load(); }, []);
 
@@ -123,7 +129,7 @@ export default function Employees() {
   return (
     <div>
       <PullToRefresh onRefresh={load}>
-      <PageHeader title="Employees" subtitle={`${data.length} total employees`} action={openCreate} actionLabel="Add Employee" actionIcon={Users} />
+      <PageHeader title="Employees" subtitle={`${data.length} total employees`} action={canManage ? openCreate : undefined} actionLabel="Add Employee" actionIcon={Users} />
       <DataTable
         data={data}
         columns={columns}
@@ -136,11 +142,11 @@ export default function Employees() {
             { value: 'active', label: 'Active' }, { value: 'disabled', label: 'Disabled' },
           ]},
         ]}
-        onEdit={openEdit}
-        onDelete={setDeleteDialog}
+        onEdit={canManage ? openEdit : undefined}
+        onDelete={canManage ? setDeleteDialog : undefined}
         emptyTitle="No employees yet"
         emptyDescription="Add your first employee to get started"
-        emptyAction={openCreate}
+        emptyAction={canManage ? openCreate : undefined}
         emptyActionLabel="Add Employee"
       />
       </PullToRefresh>
