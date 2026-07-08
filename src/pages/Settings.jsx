@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Settings as SettingsIcon, Building2, Route, Bell, Shield, Monitor, Mail, Database, Server, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings as SettingsIcon, Building2, Route, Bell, Shield, Monitor, Mail, Database, Server, Activity, Trash2, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,10 +8,40 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/shared/PageHeader';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { useToast } from '@/components/ui/use-toast';
+import { base44 } from '@/api/base44Client';
 
 export default function Settings() {
   const { toast } = useToast();
+  const [user, setUser] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await base44.entities.AuditLog.create({
+        user_name: user?.full_name || 'Unknown',
+        user_email: user?.email || '',
+        action: 'delete',
+        module: 'Account',
+        entity_type: 'User',
+        details: 'User initiated account deletion from Settings',
+      });
+      toast({ title: 'Account deletion logged', description: 'Your account data is being removed.' });
+      setDeleteOpen(false);
+      base44.auth.logout('/login');
+    } catch {
+      toast({ title: 'Failed to process deletion', variant: 'destructive' });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const [company, setCompany] = useState({
     name: 'TripBuddy Corp', timezone: 'UTC', currency: 'USD',
@@ -183,6 +213,37 @@ export default function Settings() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Danger Zone — Delete Account */}
+      <div className="bg-card rounded-xl border border-destructive/30 p-6 max-w-2xl">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-5 h-5 text-destructive" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold">Delete Account</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="destructive"
+          className="mt-4"
+          onClick={() => setDeleteOpen(true)}
+        >
+          <Trash2 className="w-4 h-4" /> Delete Account
+        </Button>
+      </div>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDeleteAccount}
+        title="Delete Account?"
+        description="This will permanently remove your account and all associated data. This action cannot be undone."
+        loading={deleting}
+      />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MobileSelect from '@/components/shared/MobileSelect';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function FormModal({ open, onClose, title, fields = [], values, onChange, onSubmit, loading }) {
@@ -28,19 +28,13 @@ export default function FormModal({ open, onClose, title, fields = [], values, o
                 {field.required && <span className="text-destructive ml-0.5">*</span>}
               </Label>
               {field.type === 'select' ? (
-                <Select
+                <MobileSelect
+                  id={field.key}
                   value={values[field.key] || ''}
                   onValueChange={v => onChange(field.key, v)}
-                >
-                  <SelectTrigger id={field.key}>
-                    <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {field.options?.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={field.options || []}
+                  placeholder={`Select ${field.label.toLowerCase()}`}
+                />
               ) : field.type === 'textarea' ? (
                 <Textarea
                   id={field.key}

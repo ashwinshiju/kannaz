@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import MobileNavHeader from '@/components/layout/MobileNavHeader';
 import { cn } from '@/lib/utils';
 
 export default function AppLayout() {
@@ -43,13 +45,16 @@ export default function AppLayout() {
         sidebarCollapsed={collapsed}
       />
       <main className={cn(
-        "pt-16 min-h-screen transition-all duration-300",
+        "pt-16 min-h-screen transition-all duration-300 pb-16 md:pb-0",
         collapsed ? "lg:ml-[68px]" : "lg:ml-[250px]"
       )}>
         <div className="p-4 lg:p-6">
+          <MobileNavHeader />
           <Outlet />
         </div>
       </main>
+
+      <MobileBottomNav />
     </div>
   );
 }

@@ -95,10 +95,31 @@
   }
   body {
     @apply bg-background text-foreground font-body antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  /* Prevent text selection / tap highlight on interactive elements */
+  button,
+  [role="button"],
+  [role="tab"],
+  a,
+  svg {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
 @layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .no-overscroll {
+    overscroll-behavior: none;
+  }
   .scrollbar-thin {
     scrollbar-width: thin;
   }
@@ -112,5 +133,9 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background: hsl(var(--muted-foreground) / 0.3);
     border-radius: 3px;
+  }
+  .scrollbar-thin,
+  nav {
+    overscroll-behavior: none;
   }
 }
