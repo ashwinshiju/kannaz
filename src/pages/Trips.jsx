@@ -37,15 +37,16 @@ export default function Trips() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const { data = [], isLoading: loading, refetch } = useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: () => base44.entities.Trip.list(),
+  });
+
   // If the current user already has an in-progress trip, the primary action
   // becomes "End Trip" instead of "Create Trip".
   const activeTrip = data.find(
     (t) => t.status === 'in_progress' && t.employee_id === user?.id
   );
-  const { data = [], isLoading: loading, refetch } = useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: () => base44.entities.Trip.list(),
-  });
 
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
