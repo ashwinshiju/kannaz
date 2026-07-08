@@ -138,10 +138,8 @@ export default function Trips() {
     { key: 'trip_number', label: 'Trip #', render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
     { key: 'employee_name', label: 'Employee', render: (val) => <span className="font-medium">{val}</span> },
     { key: 'vehicle_name', label: 'Vehicle' },
-    { key: 'start_location', label: 'From' },
-    { key: 'end_location', label: 'To' },
     {
-      key: 'start_lat', label: 'Start GPS',
+      key: 'start_lat', label: 'From',
       render: (_, row) => {
         if (row.start_lat == null || row.start_lng == null) return <span className="text-muted-foreground">—</span>;
         const url = `https://www.google.com/maps/search/?api=1&query=${row.start_lat},${row.start_lng}`;
@@ -154,7 +152,7 @@ export default function Trips() {
       }
     },
     {
-      key: 'end_lat', label: 'End GPS',
+      key: 'end_lat', label: 'To',
       render: (_, row) => {
         if (row.end_lat == null || row.end_lng == null) return <span className="text-muted-foreground">—</span>;
         const url = `https://www.google.com/maps/search/?api=1&query=${row.end_lat},${row.end_lng}`;
