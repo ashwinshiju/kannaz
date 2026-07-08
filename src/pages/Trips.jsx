@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Route, Play, CheckCircle2, Clock, MapPin } from 'lucide-react';
+import { Route, Play, CheckCircle2, Clock, MapPin, Navigation } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
@@ -182,9 +182,23 @@ export default function Trips() {
             </Button>
           )}
           {row.status === 'completed' && (
-            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); acknowledgeTrip(row); }} className="h-7 text-xs gap-1">
-              <Clock className="w-3 h-3" /> Acknowledge
-            </Button>
+            <>
+              {row.start_lat != null && row.start_lng != null && row.end_lat != null && row.end_lng != null && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&origin=${row.start_lat},${row.start_lng}&destination=${row.end_lat},${row.end_lng}&travelmode=driving`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
+                    <Navigation className="w-3 h-3" /> Route
+                  </Button>
+                </a>
+              )}
+              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); acknowledgeTrip(row); }} className="h-7 text-xs gap-1">
+                <Clock className="w-3 h-3" /> Acknowledge
+              </Button>
+            </>
           )}
         </div>
       )
