@@ -7,6 +7,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import FormModal from '@/components/shared/FormModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import EndTripDialog from '@/components/trips/EndTripDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PullToRefresh from '@/components/shared/PullToRefresh';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
@@ -40,6 +41,7 @@ export default function Trips() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
+  const [endTripDialog, setEndTripDialog] = useState(null);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -121,18 +123,6 @@ export default function Trips() {
     }
   };
 
-  const completeTrip = async (trip) => {
-    await updateTripStatus(trip, { status: 'completed', completed_at: new Date().toISOString() }, 'Trip completed');
-    // Revert the vehicle's status to available now that the trip has ended.
-    if (trip.vehicle_id) {
-      try {
-        await base44.entities.Vehicle.update(trip.vehicle_id, { status: 'available' });
-        queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-        queryClient.invalidateQueries({ queryKey: ['vehicles', 'available'] });
-      } catch { /* vehicle status update is best-effort */ }
-    }
-  };
-
   const acknowledgeTrip = (trip) => updateTripStatus(trip, { status: 'acknowledged', acknowledged_at: new Date().toISOString() }, 'Trip acknowledged');
 
   const columns = [
@@ -154,8 +144,8 @@ export default function Trips() {
             </Button>
           )}
           {row.status === 'in_progress' && (
-            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); completeTrip(row); }} className="h-7 text-xs gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Complete
+            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setEndTripDialog(row); }} className="h-7 text-xs gap-1">
+              <CheckCircle2 className="w-3 h-3" /> End Trip
             </Button>
           )}
           {row.status === 'completed' && (
@@ -192,6 +182,7 @@ export default function Trips() {
           fields={fields} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
         <ConfirmDialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)} onConfirm={handleDelete}
           title="Delete Trip" description="Delete this trip record?" loading={saving} />
+        <EndTripDialog trip={endTripDialog} open={!!endTripDialog} onClose={() => setEndTripDialog(null)} />
       </div>
     </PullToRefresh>
   );

@@ -58,6 +58,19 @@
       "type": "string",
       "title": "Start GPS Validation Metadata"
     },
+    "end_trust_score": {
+      "type": "number",
+      "title": "End GPS Trust Score"
+    },
+    "end_gps_metadata": {
+      "type": "string",
+      "title": "End GPS Validation Metadata"
+    },
+    "odometer_manually_entered": {
+      "type": "boolean",
+      "default": false,
+      "title": "Start Odometer Manually Entered"
+    },
     "purpose": {
       "type": "string",
       "enum": [

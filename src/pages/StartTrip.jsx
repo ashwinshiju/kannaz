@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { GPSService, GPS_DEFAULTS } from '@/services/GPSService';
-import { ChevronLeft, MapPin, Loader2, AlertTriangle, Car } from 'lucide-react';
+import { ChevronLeft, MapPin, Loader2, AlertTriangle, Car, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,6 +49,8 @@ export default function StartTrip() {
   const [vehicleId, setVehicleId] = useState('');
   const [purpose, setPurpose] = useState('official');
   const [startOdometer, setStartOdometer] = useState('');
+  const [odometerLocked, setOdometerLocked] = useState(false);
+  const [odometerManuallyEntered, setOdometerManuallyEntered] = useState(false);
   const [startLat, setStartLat] = useState('');
   const [startLng, setStartLng] = useState('');
   const [notes, setNotes] = useState('');
@@ -61,6 +63,57 @@ export default function StartTrip() {
     value: v.id,
     label: `${v.reg_no} — ${v.make} ${v.model}`.trim(),
   }));
+
+  // Auto-fetch the vehicle's last known odometer reading when a vehicle is
+  // selected. The chain reads from live Trip records (most recently completed
+  // trip's end_odometer) and falls back to the Vehicle entity's
+  // current_odometer field — no hardcoded values.
+  const { data: odometerData, isLoading: odometerLoading } = useQuery({
+    queryKey: ['vehicle-odometer', vehicleId],
+    queryFn: async () => {
+      const vehicle = await base44.entities.Vehicle.get(vehicleId);
+      // Fetch recent trips for this vehicle, sorted by most recent first.
+      const trips = await base44.entities.Trip.filter(
+        { vehicle_id: vehicleId },
+        '-created_date',
+        50
+      );
+      const completedTrips = trips.filter(
+        (t) => t.status === 'completed' && t.end_odometer != null
+      );
+      const lastEndOdometer = completedTrips.length > 0 ? completedTrips[0].end_odometer : null;
+      return {
+        lastTripEndOdometer: lastEndOdometer,
+        vehicleOdometer: vehicle.current_odometer,
+      };
+    },
+    enabled: !!vehicleId,
+  });
+
+  // Pre-fill the start odometer when data arrives.
+  useEffect(() => {
+    if (!odometerData) {
+      setStartOdometer('');
+      setOdometerLocked(false);
+      setOdometerManuallyEntered(false);
+      return;
+    }
+    const { lastTripEndOdometer, vehicleOdometer } = odometerData;
+    if (lastTripEndOdometer != null) {
+      setStartOdometer(String(lastTripEndOdometer));
+      setOdometerLocked(true);
+      setOdometerManuallyEntered(false);
+    } else if (vehicleOdometer != null) {
+      setStartOdometer(String(vehicleOdometer));
+      setOdometerLocked(true);
+      setOdometerManuallyEntered(false);
+    } else {
+      // No prior odometer value — allow manual entry as fallback.
+      setStartOdometer('');
+      setOdometerLocked(false);
+      setOdometerManuallyEntered(true);
+    }
+  }, [odometerData]);
 
   const handleCaptureGPS = async () => {
     setGpsCapturing(true);
@@ -157,6 +210,7 @@ export default function StartTrip() {
         purpose,
         status: 'in_progress',
         start_odometer: startOdometer ? parseFloat(startOdometer) : null,
+        odometer_manually_entered: odometerManuallyEntered,
         started_at: now,
         notes: notes || '',
       };
@@ -243,14 +297,30 @@ export default function StartTrip() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="start_odometer">Start odometer (km)</Label>
+              <Label htmlFor="start_odometer">
+                Start odometer (km)
+                {odometerLocked && (
+                  <span className="ml-1.5 inline-flex items-center gap-0.5 text-xs text-muted-foreground font-normal">
+                    <Lock className="w-3 h-3" /> auto
+                  </span>
+                )}
+              </Label>
               <Input
                 id="start_odometer"
                 type="number"
+                step="0.01"
                 value={startOdometer}
                 onChange={e => setStartOdometer(e.target.value)}
-                placeholder="0"
+                placeholder={odometerLocked ? '' : 'Enter odometer (no prior record)'}
+                readOnly={odometerLocked}
+                disabled={odometerLoading}
+                className={odometerLocked ? 'bg-muted/50 cursor-not-allowed' : ''}
               />
+              {odometerManuallyEntered && (
+                <p className="text-xs text-muted-foreground">
+                  No prior odometer on record — manually entered value will be flagged.
+                </p>
+              )}
             </div>
           </div>
 
