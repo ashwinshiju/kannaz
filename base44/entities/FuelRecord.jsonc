@@ -30,12 +30,16 @@
     "fuel_type": {
       "type": "string",
       "enum": [
-        "petrol",
-        "diesel",
-        "electric",
-        "cng"
+        "super_98",
+        "special_95",
+        "eplus_91",
+        "diesel"
       ],
       "title": "Fuel Type"
+    },
+    "fuel_rate": {
+      "type": "number",
+      "title": "Fuel Rate (AED/L)"
     },
     "litres": {
       "type": "number",

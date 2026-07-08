@@ -1,0 +1,45 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "monthly_fuel_price_sync",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "fetch_prices": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "fetchFuelPrices",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Fetch & Store Fuel Prices",
+            "description": "Scrape Gulf News fuel rates"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 2 1 * *",
+      "one_time_date": null,
+      "timezone": "Asia/Dubai",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Scrapes UAE fuel prices (Super 98, Special 95, EPlus 91, Diesel) from Gulf News on the 1st of every month and stores them in the database",
+  "name": "Monthly Fuel Price Sync"
+}
