@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Route, Gauge, MapPin, Clock } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import TripRouteDistance from '@/components/trips/TripRouteDistance';
 import moment from 'moment';
 
 export default function LiveMap() {
@@ -144,6 +145,7 @@ export default function LiveMap() {
                   {trip.distance_km != null ? `${trip.distance_km} km` : '—'}
                 </span>
               </div>
+              <TripRouteDistance trip={trip} />
               {trip.end_trust_score != null && (
                 <p className="text-xs text-muted-foreground">
                   GPS Trust Score: {trip.end_trust_score}/100
