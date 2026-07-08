@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import TripSummaryCard from '@/components/trips/TripSummaryCard';
 
 export default function EndTripDialog({ trip, open, onClose }) {
   const { toast } = useToast();
@@ -252,6 +253,21 @@ export default function EndTripDialog({ trip, open, onClose }) {
               </p>
             )}
           </div>
+
+          {/* Live summary card — shows calculated distance once end odometer is entered */}
+          {endOdometer && !odometerError && (
+            <TripSummaryCard
+              trip={{
+                ...trip,
+                end_odometer: parseFloat(endOdometer) || null,
+                distance_km:
+                  startOdo != null && endOdometer
+                    ? Math.round((parseFloat(endOdometer) - startOdo) * 100) / 100
+                    : null,
+                end_trust_score: gpsMetadata?.trustScore ?? null,
+              }}
+            />
+          )}
 
           <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onClose(false)}>Cancel</Button>
