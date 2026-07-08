@@ -181,24 +181,17 @@ export default function Trips() {
               <CheckCircle2 className="w-3 h-3" /> End Trip
             </Button>
           )}
-          {row.status === 'completed' && (
-            <>
-              {row.start_lat != null && row.start_lng != null && row.end_lat != null && row.end_lng != null && (
-                <a
-                  href={`https://www.google.com/maps/dir/?api=1&origin=${row.start_lat},${row.start_lng}&destination=${row.end_lat},${row.end_lng}&travelmode=driving`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
-                    <Navigation className="w-3 h-3" /> Route
-                  </Button>
-                </a>
-              )}
-              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); acknowledgeTrip(row); }} className="h-7 text-xs gap-1">
-                <Clock className="w-3 h-3" /> Acknowledge
+          {row.status === 'completed' && row.start_lat != null && row.start_lng != null && row.end_lat != null && row.end_lng != null && (
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&origin=${row.start_lat},${row.start_lng}&destination=${row.end_lat},${row.end_lng}&travelmode=driving`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
+                <Navigation className="w-3 h-3" /> Route
               </Button>
-            </>
+            </a>
           )}
         </div>
       )
