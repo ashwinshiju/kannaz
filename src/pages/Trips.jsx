@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Route, Play, CheckCircle2, Clock } from 'lucide-react';
@@ -29,6 +30,7 @@ const fields = [
 ];
 
 export default function Trips() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data = [], isLoading: loading, refetch } = useQuery({
@@ -43,10 +45,7 @@ export default function Trips() {
   const [saving, setSaving] = useState(false);
 
   const openCreate = () => {
-    const tripNum = `TRP-${String(data.length + 1).padStart(4, '0')}`;
-    setEditing(null);
-    setForm({ status: 'created', purpose: 'official', trip_number: tripNum });
-    setModalOpen(true);
+    navigate('/trips/new');
   };
 
   const openEdit = (row) => { setEditing(row); setForm({ ...row }); setModalOpen(true); };
@@ -110,8 +109,30 @@ export default function Trips() {
     }
   };
 
-  const startTrip = (trip) => updateTripStatus(trip, { status: 'in_progress', started_at: new Date().toISOString() }, 'Trip started');
-  const completeTrip = (trip) => updateTripStatus(trip, { status: 'completed', completed_at: new Date().toISOString() }, 'Trip completed');
+  const startTrip = async (trip) => {
+    await updateTripStatus(trip, { status: 'in_progress', started_at: new Date().toISOString() }, 'Trip started');
+    // Mark the vehicle as in-use so it no longer appears as available.
+    if (trip.vehicle_id) {
+      try {
+        await base44.entities.Vehicle.update(trip.vehicle_id, { status: 'in_use' });
+        queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+        queryClient.invalidateQueries({ queryKey: ['vehicles', 'available'] });
+      } catch { /* vehicle status update is best-effort */ }
+    }
+  };
+
+  const completeTrip = async (trip) => {
+    await updateTripStatus(trip, { status: 'completed', completed_at: new Date().toISOString() }, 'Trip completed');
+    // Revert the vehicle's status to available now that the trip has ended.
+    if (trip.vehicle_id) {
+      try {
+        await base44.entities.Vehicle.update(trip.vehicle_id, { status: 'available' });
+        queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+        queryClient.invalidateQueries({ queryKey: ['vehicles', 'available'] });
+      } catch { /* vehicle status update is best-effort */ }
+    }
+  };
+
   const acknowledgeTrip = (trip) => updateTripStatus(trip, { status: 'acknowledged', acknowledged_at: new Date().toISOString() }, 'Trip acknowledged');
 
   const columns = [

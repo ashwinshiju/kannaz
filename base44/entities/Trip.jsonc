@@ -50,6 +50,14 @@
       "type": "number",
       "title": "End Longitude"
     },
+    "start_trust_score": {
+      "type": "number",
+      "title": "Start GPS Trust Score"
+    },
+    "start_gps_metadata": {
+      "type": "string",
+      "title": "Start GPS Validation Metadata"
+    },
     "purpose": {
       "type": "string",
       "enum": [

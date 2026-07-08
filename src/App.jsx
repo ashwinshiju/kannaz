@@ -21,6 +21,7 @@ import Vehicles from '@/pages/Vehicles';
 import VehicleProfile from '@/pages/VehicleProfile';
 import Locations from '@/pages/Locations';
 import Trips from '@/pages/Trips';
+import StartTrip from '@/pages/StartTrip';
 import FuelLog from '@/pages/FuelLog';
 import MaintenancePage from '@/pages/MaintenancePage';
 import Documents from '@/pages/Documents';
@@ -69,6 +70,7 @@ const AuthenticatedApp = () => {
           <Route path="/vehicles/:id" element={<VehicleProfile />} />
           <Route path="/locations" element={<Locations />} />
           <Route path="/trips" element={<Trips />} />
+          <Route path="/trips/new" element={<StartTrip />} />
           <Route path="/fuel" element={<FuelLog />} />
           <Route path="/maintenance" element={<MaintenancePage />} />
           <Route path="/documents" element={<Documents />} />

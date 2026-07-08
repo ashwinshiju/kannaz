@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react';
 
 const childRoutes = [
   { pattern: /^\/vehicles\/[^/]+$/, title: 'Vehicle Profile', back: '/vehicles' },
+  { pattern: /^\/trips\/new$/, title: 'Start a Trip', back: '/trips' },
 ];
 
 function titleize(pathname) {

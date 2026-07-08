@@ -346,6 +346,53 @@ export class GPSService {
   }
 
   /**
+   * Capture a single validated GPS point. Acquires one raw fix via the
+   * Geolocation API and pipes it through the full validation pipeline
+   * (coordinate bounds, null-island, jump detection, spoofing, trust score).
+   * Returns a promise that resolves to { point, error, permissionState }.
+   */
+  captureSinglePoint(opts = {}) {
+    const { timeoutMs = this.config.watchTimeoutMs, enableHighAccuracy = this.config.enableHighAccuracy } = opts;
+
+    return new Promise(async (resolve) => {
+      if (!('geolocation' in navigator)) {
+        resolve({ point: null, error: 'Geolocation API not available', permissionState: LOCATION_STATES.SERVICES_DISABLED });
+        return;
+      }
+
+      const permResult = await requestPermission();
+      if (permResult.state === LOCATION_STATES.DENIED) {
+        resolve({ point: null, error: 'Location permission denied', permissionState: LOCATION_STATES.DENIED });
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const point = this.processRawPosition(pos);
+          if (!point) {
+            resolve({ point: null, error: 'GPS reading failed coordinate validation', permissionState: LOCATION_STATES.GRANTED });
+            return;
+          }
+          resolve({ point, error: null, permissionState: LOCATION_STATES.GRANTED });
+        },
+        (err) => {
+          const message =
+            err.code === err.PERMISSION_DENIED ? 'Location permission denied' :
+            err.code === err.TIMEOUT ? 'GPS fix timed out — check sky visibility' :
+            err.code === err.POSITION_UNAVAILABLE ? 'Position unavailable — location services may be disabled' :
+            err.message;
+          const state =
+            err.code === err.PERMISSION_DENIED ? LOCATION_STATES.DENIED :
+            err.code === err.TIMEOUT ? LOCATION_STATES.TIMEOUT :
+            LOCATION_STATES.SERVICES_DISABLED;
+          resolve({ point: null, error: message, permissionState: state });
+        },
+        { enableHighAccuracy, timeout: timeoutMs, maximumAge: 0 }
+      );
+    });
+  }
+
+  /**
    * Feed a synthetic point stream (from LocationSimulator) into the pipeline.
    * @param {Array} points — array of { lat, lng, accuracy?, timestamp?, isMocked? }
    * @param {number} intervalMs — emit interval
