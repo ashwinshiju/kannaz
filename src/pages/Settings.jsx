@@ -25,19 +25,33 @@ export default function Settings() {
   const handleDeleteAccount = async () => {
     setDeleting(true);
     try {
-      await base44.entities.AuditLog.create({
-        user_name: user?.full_name || 'Unknown',
-        user_email: user?.email || '',
+      const userId = user?.id || '';
+      const userEmail = user?.email || '';
+      const userName = user?.full_name || 'Unknown';
+
+      // Clean up all user-associated data across entities before logging out
+      await Promise.all([
+        base44.asServiceRole.entities.Trip.deleteMany({ employee_id: userId }),
+        base44.asServiceRole.entities.FuelRecord.deleteMany({ employee_id: userId }),
+        base44.asServiceRole.entities.Notification.deleteMany({ target_user_id: userId }),
+        base44.asServiceRole.entities.AuditLog.deleteMany({ user_email: userEmail }),
+      ]);
+
+      // Log the deletion action (after cleanup so it survives the AuditLog purge)
+      await base44.asServiceRole.entities.AuditLog.create({
+        user_name: userName,
+        user_email: userEmail,
         action: 'delete',
         module: 'Account',
         entity_type: 'User',
-        details: 'User initiated account deletion from Settings',
+        details: 'User initiated account deletion — all associated data removed',
       });
-      toast({ title: 'Account deletion logged', description: 'Your account data is being removed.' });
+
+      toast({ title: 'Account data deleted', description: 'All your data has been permanently removed.' });
       setDeleteOpen(false);
       base44.auth.logout('/login');
     } catch {
-      toast({ title: 'Failed to process deletion', variant: 'destructive' });
+      toast({ title: 'Failed to complete deletion', variant: 'destructive' });
     } finally {
       setDeleting(false);
     }

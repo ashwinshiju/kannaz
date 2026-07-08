@@ -7,6 +7,7 @@ import FormModal from '@/components/shared/FormModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import PullToRefresh from '@/components/shared/PullToRefresh';
 import { useToast } from '@/components/ui/use-toast';
 
 const fields = [
@@ -51,27 +52,58 @@ export default function Locations() {
 
   const handleSave = async () => {
     setSaving(true);
+    setModalOpen(false);
     if (editing) {
-      await base44.entities.Location.update(editing.id, form);
-      toast({ title: 'Location updated' });
+      const previous = data;
+      setData(prev => prev.map(item => item.id === editing.id ? { ...item, ...form } : item));
+      try {
+        await base44.entities.Location.update(editing.id, form);
+        toast({ title: 'Location updated' });
+      } catch {
+        setData(previous);
+        toast({ title: 'Failed to update location', variant: 'destructive' });
+      } finally {
+        setSaving(false);
+      }
     } else {
-      await base44.entities.Location.create(form);
-      toast({ title: 'Location added' });
+      const tempId = `temp-${Date.now()}`;
+      const previous = data;
+      setData(prev => [...prev, { ...form, id: tempId }]);
+      try {
+        const created = await base44.entities.Location.create(form);
+        setData(prev => prev.map(item => item.id === tempId ? created : item));
+        toast({ title: 'Location added' });
+      } catch {
+        setData(previous);
+        toast({ title: 'Failed to add location', variant: 'destructive' });
+      } finally {
+        setSaving(false);
+      }
     }
-    setSaving(false); setModalOpen(false); load();
   };
 
   const handleDelete = async () => {
+    const previous = data;
+    const item = deleteDialog;
+    setData(prev => prev.filter(d => d.id !== item.id));
+    setDeleteDialog(null);
     setSaving(true);
-    await base44.entities.Location.delete(deleteDialog.id);
-    toast({ title: 'Location deleted' });
-    setSaving(false); setDeleteDialog(null); load();
+    try {
+      await base44.entities.Location.delete(item.id);
+      toast({ title: 'Location deleted' });
+    } catch {
+      setData(previous);
+      toast({ title: 'Failed to delete location', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return <div className="space-y-6"><PageHeader title="Locations" /><TableSkeleton /></div>;
 
   return (
     <div>
+      <PullToRefresh onRefresh={load}>
       <PageHeader title="Locations" subtitle={`${data.length} locations`} action={openCreate} actionLabel="Add Location" actionIcon={MapPin} />
       <DataTable
         data={data} columns={columns} searchPlaceholder="Search locations..."
@@ -85,6 +117,7 @@ export default function Locations() {
         onEdit={openEdit} onDelete={setDeleteDialog}
         emptyTitle="No locations yet" emptyAction={openCreate} emptyActionLabel="Add Location"
       />
+      </PullToRefresh>
       <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Location' : 'Add Location'}
         fields={fields} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
       <ConfirmDialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)} onConfirm={handleDelete}

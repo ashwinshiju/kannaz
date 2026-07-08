@@ -7,6 +7,7 @@ import FormModal from '@/components/shared/FormModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import PullToRefresh from '@/components/shared/PullToRefresh';
 import { useToast } from '@/components/ui/use-toast';
 import moment from 'moment';
 
@@ -85,6 +86,7 @@ export default function Documents() {
 
   return (
     <div>
+      <PullToRefresh onRefresh={load}>
       <PageHeader title="Documents & Compliance" subtitle={`${data.length} documents`} action={openCreate} actionLabel="Add Document" actionIcon={FileText} />
       <DataTable
         data={data} columns={columns} searchPlaceholder="Search documents..."
@@ -97,6 +99,7 @@ export default function Documents() {
         onEdit={openEdit} onDelete={setDeleteDialog}
         emptyTitle="No documents yet" emptyAction={openCreate} emptyActionLabel="Add Document"
       />
+      </PullToRefresh>
       <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Document' : 'Add Document'}
         fields={fields} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
       <ConfirmDialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)} onConfirm={handleDelete}

@@ -7,6 +7,7 @@ import FormModal from '@/components/shared/FormModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import PullToRefresh from '@/components/shared/PullToRefresh';
 import { useToast } from '@/components/ui/use-toast';
 
 const fields = [
@@ -70,31 +71,58 @@ export default function Employees() {
 
   const handleSave = async () => {
     setSaving(true);
-    if (editing) {
-      await base44.entities.Employee.update(editing.id, form);
-      toast({ title: 'Employee updated' });
-    } else {
-      await base44.entities.Employee.create(form);
-      toast({ title: 'Employee created' });
-    }
-    setSaving(false);
     setModalOpen(false);
-    load();
+    if (editing) {
+      const previous = data;
+      setData(prev => prev.map(item => item.id === editing.id ? { ...item, ...form } : item));
+      try {
+        await base44.entities.Employee.update(editing.id, form);
+        toast({ title: 'Employee updated' });
+      } catch {
+        setData(previous);
+        toast({ title: 'Failed to update employee', variant: 'destructive' });
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      const previous = data;
+      setData(prev => [...prev, { ...form, id: tempId }]);
+      try {
+        const created = await base44.entities.Employee.create(form);
+        setData(prev => prev.map(item => item.id === tempId ? created : item));
+        toast({ title: 'Employee created' });
+      } catch {
+        setData(previous);
+        toast({ title: 'Failed to create employee', variant: 'destructive' });
+      } finally {
+        setSaving(false);
+      }
+    }
   };
 
   const handleDelete = async () => {
-    setSaving(true);
-    await base44.entities.Employee.delete(deleteDialog.id);
-    toast({ title: 'Employee deleted' });
-    setSaving(false);
+    const previous = data;
+    const item = deleteDialog;
+    setData(prev => prev.filter(d => d.id !== item.id));
     setDeleteDialog(null);
-    load();
+    setSaving(true);
+    try {
+      await base44.entities.Employee.delete(item.id);
+      toast({ title: 'Employee deleted' });
+    } catch {
+      setData(previous);
+      toast({ title: 'Failed to delete employee', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return <div className="space-y-6"><PageHeader title="Employees" /><TableSkeleton /></div>;
 
   return (
     <div>
+      <PullToRefresh onRefresh={load}>
       <PageHeader title="Employees" subtitle={`${data.length} total employees`} action={openCreate} actionLabel="Add Employee" actionIcon={Users} />
       <DataTable
         data={data}
@@ -115,6 +143,7 @@ export default function Employees() {
         emptyAction={openCreate}
         emptyActionLabel="Add Employee"
       />
+      </PullToRefresh>
       <FormModal
         open={modalOpen}
         onClose={setModalOpen}

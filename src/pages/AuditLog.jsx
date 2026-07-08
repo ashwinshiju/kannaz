@@ -5,6 +5,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import PullToRefresh from '@/components/shared/PullToRefresh';
 import moment from 'moment';
 
 const columns = [
@@ -22,17 +23,19 @@ export default function AuditLog() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    base44.entities.AuditLog.list('-created_date', 50).then(items => {
-      setData(items);
-      setLoading(false);
-    });
-  }, []);
+  const load = async () => {
+    const items = await base44.entities.AuditLog.list('-created_date', 50);
+    setData(items);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
 
   if (loading) return <div className="space-y-6"><PageHeader title="Audit Log" /><TableSkeleton /></div>;
 
   return (
     <div>
+      <PullToRefresh onRefresh={load}>
       <PageHeader title="Audit Log" subtitle={`${data.length} entries`} />
       <DataTable
         data={data} columns={columns} searchPlaceholder="Search audit log..."
@@ -45,6 +48,7 @@ export default function AuditLog() {
         emptyTitle="No audit entries yet"
         emptyDescription="Activity will be logged here"
       />
+      </PullToRefresh>
     </div>
   );
 }
