@@ -8,7 +8,7 @@ const tabs = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
   { label: 'Trips', icon: Route, path: '/trips' },
   { label: 'Vehicles', icon: Car, path: '/vehicles' },
-  { label: 'Map', icon: Map, path: '/live-map' },
+  { label: 'Reports', icon: Map, path: '/live-map' },
   { label: 'Settings', icon: SettingsIcon, path: '/settings' },
 ];
 

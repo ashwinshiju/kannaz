@@ -19,7 +19,7 @@ const navGroups = [
     items: [
       { label: 'Trips', icon: Route, path: '/trips' },
       { label: 'Vehicles', icon: Car, path: '/vehicles' },
-      { label: 'Live Map', icon: Map, path: '/live-map' },
+      { label: 'Reports', icon: Map, path: '/live-map' },
     ]
   },
   {
@@ -41,8 +41,7 @@ const navGroups = [
   {
     label: 'Insights',
     items: [
-      { label: 'Reports', icon: BarChart3, path: '/reports' },
-      { label: 'Audit Log', icon: ClipboardList, path: '/audit-log' },
+      { label: 'Audit Logs', icon: ClipboardList, path: '/audit-log' },
     ]
   },
   {
