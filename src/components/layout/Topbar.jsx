@@ -25,7 +25,7 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
   return (
     <header
       className={cn(
-        "fixed top-0 right-0 z-30 h-16 bg-card/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-4 lg:px-6 transition-all duration-300 left-0",
+        "fixed top-0 right-0 z-30 h-[calc(4rem_+_env(safe-area-inset-top))] bg-card/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-4 lg:px-6 transition-all duration-300 left-0",
         sidebarCollapsed ? "lg:left-[68px]" : "lg:left-[250px]"
       )}
     >

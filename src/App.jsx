@@ -29,32 +29,32 @@ import Reports from '@/pages/Reports';
 import AuditLog from '@/pages/AuditLog';
 import Permissions from '@/pages/Permissions';
 import Settings from '@/pages/Settings';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-sm text-muted-foreground">Loading TripBuddy...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
-    }
+  if (authError?.type === 'auth_required') {
+    navigateToLogin();
+    return null;
   }
 
   return (
-    <Routes>
+    <AnimatePresence mode="wait">
+      {(isLoadingPublicSettings || isLoadingAuth) ? (
+        <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 flex items-center justify-center bg-background">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            <p className="text-sm text-muted-foreground">Loading TripBuddy...</p>
+          </div>
+        </motion.div>
+      ) : authError?.type === 'user_not_registered' ? (
+        <motion.div key="not-registered" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <UserNotRegisteredError />
+        </motion.div>
+      ) : (
+        <motion.div key="app" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -81,7 +81,10 @@ const AuthenticatedApp = () => {
       </Route>
 
       <Route path="*" element={<PageNotFound />} />
-    </Routes>
+        </Routes>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

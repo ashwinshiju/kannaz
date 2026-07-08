@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Route, Play, CheckCircle2, Clock, X } from 'lucide-react';
+import { Route, Play, CheckCircle2, Clock } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import FormModal from '@/components/shared/FormModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
+import PullToRefresh from '@/components/shared/PullToRefresh';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import moment from 'moment';
+
+const QUERY_KEY = ['trips'];
 
 const fields = [
   { key: 'employee_name', label: 'Employee Name', required: true },
@@ -25,17 +29,18 @@ const fields = [
 ];
 
 export default function Trips() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data = [], isLoading: loading, refetch } = useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: () => base44.entities.Trip.list(),
+  });
+
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
-  const load = async () => { const items = await base44.entities.Trip.list(); setData(items); setLoading(false); };
-  useEffect(() => { load(); }, []);
 
   const openCreate = () => {
     const tripNum = `TRP-${String(data.length + 1).padStart(4, '0')}`;
@@ -48,40 +53,66 @@ export default function Trips() {
 
   const handleSave = async () => {
     setSaving(true);
-    if (editing) {
-      await base44.entities.Trip.update(editing.id, form);
-      toast({ title: 'Trip updated' });
-    } else {
-      await base44.entities.Trip.create(form);
-      toast({ title: 'Trip created' });
+    const previous = queryClient.getQueryData(QUERY_KEY);
+    try {
+      if (editing) {
+        queryClient.setQueryData(QUERY_KEY, (old) =>
+          (old || []).map(item => item.id === editing.id ? { ...item, ...form } : item)
+        );
+        await base44.entities.Trip.update(editing.id, form);
+        toast({ title: 'Trip updated' });
+      } else {
+        const tempId = `temp-${Date.now()}`;
+        queryClient.setQueryData(QUERY_KEY, (old) => [...(old || []), { ...form, id: tempId }]);
+        await base44.entities.Trip.create(form);
+        toast({ title: 'Trip created' });
+      }
+    } catch {
+      queryClient.setQueryData(QUERY_KEY, previous);
+      toast({ title: 'Failed to save trip', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+      setModalOpen(false);
+      queryClient.invalidateQueries(QUERY_KEY);
     }
-    setSaving(false); setModalOpen(false); load();
   };
 
   const handleDelete = async () => {
     setSaving(true);
-    await base44.entities.Trip.delete(deleteDialog.id);
-    toast({ title: 'Trip deleted' });
-    setSaving(false); setDeleteDialog(null); load();
+    const previous = queryClient.getQueryData(QUERY_KEY);
+    queryClient.setQueryData(QUERY_KEY, (old) => (old || []).filter(item => item.id !== deleteDialog.id));
+    try {
+      await base44.entities.Trip.delete(deleteDialog.id);
+      toast({ title: 'Trip deleted' });
+    } catch {
+      queryClient.setQueryData(QUERY_KEY, previous);
+      toast({ title: 'Failed to delete trip', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+      setDeleteDialog(null);
+      queryClient.invalidateQueries(QUERY_KEY);
+    }
   };
 
-  const startTrip = async (trip) => {
-    await base44.entities.Trip.update(trip.id, { status: 'in_progress', started_at: new Date().toISOString() });
-    toast({ title: 'Trip started' });
-    load();
+  const updateTripStatus = async (trip, updates, message) => {
+    const previous = queryClient.getQueryData(QUERY_KEY);
+    queryClient.setQueryData(QUERY_KEY, (old) =>
+      (old || []).map(item => item.id === trip.id ? { ...item, ...updates } : item)
+    );
+    try {
+      await base44.entities.Trip.update(trip.id, updates);
+      toast({ title: message });
+    } catch {
+      queryClient.setQueryData(QUERY_KEY, previous);
+      toast({ title: 'Failed to update trip', variant: 'destructive' });
+    } finally {
+      queryClient.invalidateQueries(QUERY_KEY);
+    }
   };
 
-  const completeTrip = async (trip) => {
-    await base44.entities.Trip.update(trip.id, { status: 'completed', completed_at: new Date().toISOString() });
-    toast({ title: 'Trip completed' });
-    load();
-  };
-
-  const acknowledgeTrip = async (trip) => {
-    await base44.entities.Trip.update(trip.id, { status: 'acknowledged', acknowledged_at: new Date().toISOString() });
-    toast({ title: 'Trip acknowledged' });
-    load();
-  };
+  const startTrip = (trip) => updateTripStatus(trip, { status: 'in_progress', started_at: new Date().toISOString() }, 'Trip started');
+  const completeTrip = (trip) => updateTripStatus(trip, { status: 'completed', completed_at: new Date().toISOString() }, 'Trip completed');
+  const acknowledgeTrip = (trip) => updateTripStatus(trip, { status: 'acknowledged', acknowledged_at: new Date().toISOString() }, 'Trip acknowledged');
 
   const columns = [
     { key: 'trip_number', label: 'Trip #', render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
@@ -119,26 +150,28 @@ export default function Trips() {
   if (loading) return <div className="space-y-6"><PageHeader title="Trips" /><TableSkeleton /></div>;
 
   return (
-    <div>
-      <PageHeader title="Trip Management" subtitle={`${data.length} total trips`} action={openCreate} actionLabel="Create Trip" actionIcon={Route} />
-      <DataTable
-        data={data} columns={columns} searchPlaceholder="Search trips..."
-        filters={[
-          { key: 'status', label: 'Status', options: [
-            { value: 'created', label: 'Created' }, { value: 'in_progress', label: 'In Progress' },
-            { value: 'completed', label: 'Completed' }, { value: 'acknowledged', label: 'Acknowledged' },
-          ]},
-          { key: 'purpose', label: 'Purpose', options: [
-            { value: 'official', label: 'Official' }, { value: 'personal', label: 'Personal' },
-          ]},
-        ]}
-        onEdit={openEdit} onDelete={setDeleteDialog}
-        emptyTitle="No trips yet" emptyDescription="Create your first trip" emptyAction={openCreate} emptyActionLabel="Create Trip"
-      />
-      <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Trip' : 'Create Trip'}
-        fields={fields} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
-      <ConfirmDialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)} onConfirm={handleDelete}
-        title="Delete Trip" description="Delete this trip record?" loading={saving} />
-    </div>
+    <PullToRefresh onRefresh={refetch}>
+      <div>
+        <PageHeader title="Trip Management" subtitle={`${data.length} total trips`} action={openCreate} actionLabel="Create Trip" actionIcon={Route} />
+        <DataTable
+          data={data} columns={columns} searchPlaceholder="Search trips..."
+          filters={[
+            { key: 'status', label: 'Status', options: [
+              { value: 'created', label: 'Created' }, { value: 'in_progress', label: 'In Progress' },
+              { value: 'completed', label: 'Completed' }, { value: 'acknowledged', label: 'Acknowledged' },
+            ]},
+            { key: 'purpose', label: 'Purpose', options: [
+              { value: 'official', label: 'Official' }, { value: 'personal', label: 'Personal' },
+            ]},
+          ]}
+          onEdit={openEdit} onDelete={setDeleteDialog}
+          emptyTitle="No trips yet" emptyDescription="Create your first trip" emptyAction={openCreate} emptyActionLabel="Create Trip"
+        />
+        <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Trip' : 'Create Trip'}
+          fields={fields} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
+        <ConfirmDialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)} onConfirm={handleDelete}
+          title="Delete Trip" description="Delete this trip record?" loading={saving} />
+      </div>
+    </PullToRefresh>
   );
 }

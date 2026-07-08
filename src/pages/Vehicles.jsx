@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Car } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -7,8 +8,11 @@ import DataTable from '@/components/shared/DataTable';
 import FormModal from '@/components/shared/FormModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
+import PullToRefresh from '@/components/shared/PullToRefresh';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
+
+const QUERY_KEY = ['vehicles'];
 
 const fields = [
   { key: 'reg_no', label: 'Registration No', required: true },
@@ -44,64 +48,91 @@ const columns = [
 ];
 
 export default function Vehicles() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data = [], isLoading: loading, refetch } = useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: () => base44.entities.Vehicle.list(),
+  });
+
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
-  const load = async () => { const items = await base44.entities.Vehicle.list(); setData(items); setLoading(false); };
-  useEffect(() => { load(); }, []);
 
   const openCreate = () => { setEditing(null); setForm({ status: 'available', fuel_type: 'petrol' }); setModalOpen(true); };
   const openEdit = (row) => { setEditing(row); setForm({ ...row }); setModalOpen(true); };
 
   const handleSave = async () => {
     setSaving(true);
-    if (editing) {
-      await base44.entities.Vehicle.update(editing.id, form);
-      toast({ title: 'Vehicle updated' });
-    } else {
-      await base44.entities.Vehicle.create(form);
-      toast({ title: 'Vehicle added' });
+    const previous = queryClient.getQueryData(QUERY_KEY);
+    try {
+      if (editing) {
+        queryClient.setQueryData(QUERY_KEY, (old) =>
+          (old || []).map(item => item.id === editing.id ? { ...item, ...form } : item)
+        );
+        await base44.entities.Vehicle.update(editing.id, form);
+        toast({ title: 'Vehicle updated' });
+      } else {
+        const tempId = `temp-${Date.now()}`;
+        queryClient.setQueryData(QUERY_KEY, (old) => [...(old || []), { ...form, id: tempId }]);
+        await base44.entities.Vehicle.create(form);
+        toast({ title: 'Vehicle added' });
+      }
+    } catch {
+      queryClient.setQueryData(QUERY_KEY, previous);
+      toast({ title: 'Failed to save vehicle', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+      setModalOpen(false);
+      queryClient.invalidateQueries(QUERY_KEY);
     }
-    setSaving(false); setModalOpen(false); load();
   };
 
   const handleDelete = async () => {
     setSaving(true);
-    await base44.entities.Vehicle.delete(deleteDialog.id);
-    toast({ title: 'Vehicle deleted' });
-    setSaving(false); setDeleteDialog(null); load();
+    const previous = queryClient.getQueryData(QUERY_KEY);
+    queryClient.setQueryData(QUERY_KEY, (old) => (old || []).filter(item => item.id !== deleteDialog.id));
+    try {
+      await base44.entities.Vehicle.delete(deleteDialog.id);
+      toast({ title: 'Vehicle deleted' });
+    } catch {
+      queryClient.setQueryData(QUERY_KEY, previous);
+      toast({ title: 'Failed to delete vehicle', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+      setDeleteDialog(null);
+      queryClient.invalidateQueries(QUERY_KEY);
+    }
   };
 
   if (loading) return <div className="space-y-6"><PageHeader title="Vehicles" /><TableSkeleton /></div>;
 
   return (
-    <div>
-      <PageHeader title="Vehicles" subtitle={`${data.length} vehicles in fleet`} action={openCreate} actionLabel="Add Vehicle" actionIcon={Car} />
-      <DataTable
-        data={data} columns={columns} searchPlaceholder="Search vehicles..."
-        filters={[
-          { key: 'status', label: 'Status', options: [
-            { value: 'available', label: 'Available' }, { value: 'in_use', label: 'In Use' },
-            { value: 'maintenance', label: 'Maintenance' }, { value: 'inactive', label: 'Inactive' },
-          ]},
-          { key: 'fuel_type', label: 'Fuel', options: [
-            { value: 'petrol', label: 'Petrol' }, { value: 'diesel', label: 'Diesel' },
-            { value: 'electric', label: 'Electric' }, { value: 'hybrid', label: 'Hybrid' },
-          ]},
-        ]}
-        onEdit={openEdit} onDelete={setDeleteDialog} onView={(row) => window.location.href = `/vehicles/${row.id}`}
-        emptyTitle="No vehicles yet" emptyAction={openCreate} emptyActionLabel="Add Vehicle"
-      />
-      <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Vehicle' : 'Add Vehicle'}
-        fields={fields} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
-      <ConfirmDialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)} onConfirm={handleDelete}
-        title="Delete Vehicle" description={`Delete "${deleteDialog?.name}" (${deleteDialog?.reg_no})?`} loading={saving} />
-    </div>
+    <PullToRefresh onRefresh={refetch}>
+      <div>
+        <PageHeader title="Vehicles" subtitle={`${data.length} vehicles in fleet`} action={openCreate} actionLabel="Add Vehicle" actionIcon={Car} />
+        <DataTable
+          data={data} columns={columns} searchPlaceholder="Search vehicles..."
+          filters={[
+            { key: 'status', label: 'Status', options: [
+              { value: 'available', label: 'Available' }, { value: 'in_use', label: 'In Use' },
+              { value: 'maintenance', label: 'Maintenance' }, { value: 'inactive', label: 'Inactive' },
+            ]},
+            { key: 'fuel_type', label: 'Fuel', options: [
+              { value: 'petrol', label: 'Petrol' }, { value: 'diesel', label: 'Diesel' },
+              { value: 'electric', label: 'Electric' }, { value: 'hybrid', label: 'Hybrid' },
+            ]},
+          ]}
+          onEdit={openEdit} onDelete={setDeleteDialog} onView={(row) => window.location.href = `/vehicles/${row.id}`}
+          emptyTitle="No vehicles yet" emptyAction={openCreate} emptyActionLabel="Add Vehicle"
+        />
+        <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Vehicle' : 'Add Vehicle'}
+          fields={fields} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
+        <ConfirmDialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)} onConfirm={handleDelete}
+          title="Delete Vehicle" description={`Delete "${deleteDialog?.name}" (${deleteDialog?.reg_no})?`} loading={saving} />
+      </div>
+    </PullToRefresh>
   );
 }
