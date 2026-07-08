@@ -40,6 +40,15 @@ export default function EndTripDialog({ trip, open, onClose }) {
     }
   }, [open, trip?.id]);
 
+  // Auto-capture GPS when the dialog opens — the user only needs to enter the
+  // final odometer reading.
+  useEffect(() => {
+    if (open && !gpsCapturing && !gpsMetadata) {
+      handleCaptureGPS();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, trip?.id]);
+
   const startOdo = trip?.start_odometer;
 
   const validateOdometer = (val) => {

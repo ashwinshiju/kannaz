@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Route, Play, CheckCircle2, Clock } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import FormModal from '@/components/shared/FormModal';
@@ -33,7 +34,14 @@ const fields = [
 export default function Trips() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useToast();
+
+  // If the current user already has an in-progress trip, the primary action
+  // becomes "End Trip" instead of "Create Trip".
+  const activeTrip = data.find(
+    (t) => t.status === 'in_progress' && t.employee_id === user?.id
+  );
   const { data = [], isLoading: loading, refetch } = useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => base44.entities.Trip.list(),
@@ -143,7 +151,7 @@ export default function Trips() {
               <Play className="w-3 h-3" /> Start
             </Button>
           )}
-          {row.status === 'in_progress' && (
+          {row.status === 'in_progress' && row.id !== activeTrip?.id && (
             <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setEndTripDialog(row); }} className="h-7 text-xs gap-1">
               <CheckCircle2 className="w-3 h-3" /> End Trip
             </Button>
@@ -163,7 +171,13 @@ export default function Trips() {
   return (
     <PullToRefresh onRefresh={refetch}>
       <div>
-        <PageHeader title="Trip Management" subtitle={`${data.length} total trips`} action={openCreate} actionLabel="Create Trip" actionIcon={Route} />
+        <PageHeader
+          title="Trip Management"
+          subtitle={`${data.length} total trips`}
+          action={activeTrip ? () => setEndTripDialog(activeTrip) : openCreate}
+          actionLabel={activeTrip ? 'End Trip' : 'Create Trip'}
+          actionIcon={activeTrip ? CheckCircle2 : Route}
+        />
         <DataTable
           data={data} columns={columns} searchPlaceholder="Search trips..."
           filters={[
