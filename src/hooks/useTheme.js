@@ -3,7 +3,9 @@ import { useState, useEffect, useCallback } from 'react';
 export default function useTheme() {
   const [theme, setThemeState] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('tripbuddy-theme') || 'light';
+      const stored = localStorage.getItem('tripbuddy-theme');
+      if (stored) return stored;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
     return 'light';
   });

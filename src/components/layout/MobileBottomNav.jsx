@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Route, Car, Map, Settings as SettingsIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTabStack } from '@/lib/tabStack';
 
 const tabs = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -13,6 +14,7 @@ const tabs = [
 
 export default function MobileBottomNav() {
   const location = useLocation();
+  const { lastTabPaths } = useTabStack();
 
   return (
     <nav
@@ -23,10 +25,11 @@ export default function MobileBottomNav() {
         const isActive = tab.path === '/'
           ? location.pathname === '/'
           : location.pathname === tab.path || location.pathname.startsWith(tab.path + '/');
+        const targetPath = lastTabPaths[tab.path] || tab.path;
         return (
           <Link
             key={tab.path}
-            to={tab.path}
+            to={targetPath}
             className={cn(
               "flex flex-col items-center gap-1 py-2 px-2 min-w-[56px] transition-colors",
               isActive ? "text-primary" : "text-muted-foreground"
