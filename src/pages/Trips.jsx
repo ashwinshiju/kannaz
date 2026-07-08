@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Route, Play, CheckCircle2, Clock } from 'lucide-react';
+import { Route, Play, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
@@ -140,6 +140,32 @@ export default function Trips() {
     { key: 'vehicle_name', label: 'Vehicle' },
     { key: 'start_location', label: 'From' },
     { key: 'end_location', label: 'To' },
+    {
+      key: 'start_lat', label: 'Start GPS',
+      render: (_, row) => {
+        if (row.start_lat == null || row.start_lng == null) return <span className="text-muted-foreground">—</span>;
+        const url = `https://www.google.com/maps/search/?api=1&query=${row.start_lat},${row.start_lng}`;
+        return (
+          <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+            <MapPin className="w-3 h-3" />
+            <span className="font-mono text-xs">{row.start_lat.toFixed(4)}, {row.start_lng.toFixed(4)}</span>
+          </a>
+        );
+      }
+    },
+    {
+      key: 'end_lat', label: 'End GPS',
+      render: (_, row) => {
+        if (row.end_lat == null || row.end_lng == null) return <span className="text-muted-foreground">—</span>;
+        const url = `https://www.google.com/maps/search/?api=1&query=${row.end_lat},${row.end_lng}`;
+        return (
+          <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+            <MapPin className="w-3 h-3" />
+            <span className="font-mono text-xs">{row.end_lat.toFixed(4)}, {row.end_lng.toFixed(4)}</span>
+          </a>
+        );
+      }
+    },
     { key: 'purpose', label: 'Purpose', render: (val) => <span className="capitalize">{val || '—'}</span> },
     { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
     { key: 'created_date', label: 'Date', render: (val) => val ? moment(val).format('MMM DD, HH:mm') : '—' },
