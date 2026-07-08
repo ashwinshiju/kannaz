@@ -6,28 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import moment from 'moment';
 
-function haversineKm(lat1, lng1, lat2, lng2) {
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function mapDistance(trip) {
-  if (
-    trip.start_lat == null ||
-    trip.start_lng == null ||
-    trip.end_lat == null ||
-    trip.end_lng == null
-  )
-    return null;
-  return haversineKm(trip.start_lat, trip.start_lng, trip.end_lat, trip.end_lng);
-}
-
 export default function LiveMap() {
   const [vehicleFilter, setVehicleFilter] = useState('all');
 
@@ -164,18 +142,6 @@ export default function LiveMap() {
                 </div>
                 <span className="text-lg font-heading font-bold text-primary">
                   {trip.distance_km != null ? `${trip.distance_km} km` : '—'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span className="text-sm">Map Distance</span>
-                </div>
-                <span className="text-sm font-medium">
-                  {(() => {
-                    const md = mapDistance(trip);
-                    return md != null ? `${Math.round(md * 100) / 100} km` : '—';
-                  })()}
                 </span>
               </div>
               {trip.end_trust_score != null && (
