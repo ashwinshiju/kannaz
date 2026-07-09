@@ -77,7 +77,7 @@ export default function Dashboard() {
         </div>
         <div className="flex gap-2">
           <Button asChild size="sm">
-            <Link to="/trips/new" className="rounded-[0px_4px_4px_12px]">Start a Trip</Link>
+            <Link to="/trips/new" className="rounded">Start a Trip</Link>
           </Button>
           {activeUserTrip &&
           <Button asChild variant="destructive" size="sm">
