@@ -48,6 +48,24 @@ export default function TripSummaryCard({ trip }) {
           {computedDistance != null ? `${computedDistance} km` : '—'}
         </span>
       </div>
+      {trip.tracked_distance_km != null && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Route className="w-3.5 h-3.5" />
+            <span className="text-sm">Tracked Distance</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {trip.low_tracking_data && (
+              <span className="text-[10px] bg-warning/20 text-warning-foreground px-1.5 py-0.5 rounded">
+                low data
+              </span>
+            )}
+            <span className="text-base font-heading font-bold text-primary">
+              {trip.tracked_distance_km} km
+            </span>
+          </div>
+        </div>
+      )}
 
       {trust != null && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

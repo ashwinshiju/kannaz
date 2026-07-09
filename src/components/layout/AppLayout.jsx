@@ -6,12 +6,17 @@ import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import MobileNavHeader from '@/components/layout/MobileNavHeader';
+import { useActiveTripTracking } from '@/hooks/useActiveTripTracking';
 import { cn } from '@/lib/utils';
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+
+  // Start background GPS tracking for any in-progress trip — persists
+  // across page navigation so waypoints are captured for the full trip.
+  useActiveTripTracking();
 
   // Close mobile menu on route change
   useEffect(() => {
