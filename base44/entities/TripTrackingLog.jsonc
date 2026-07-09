@@ -14,10 +14,6 @@
       "type": "number",
       "title": "Longitude"
     },
-    "speed": {
-      "type": "number",
-      "title": "Speed (m/s)"
-    },
     "timestamp_ms": {
       "type": "number",
       "title": "Timestamp (ms)"

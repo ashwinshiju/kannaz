@@ -178,32 +178,6 @@ export default function LiveMap() {
                     <span>Low tracking data — distance estimated from start/end points</span>
                   </div>
                 )}
-                {trip.tracking_gaps && (() => {
-                  try {
-                    const gaps = JSON.parse(trip.tracking_gaps);
-                    if (!gaps || gaps.length === 0) return null;
-                    const totalMin = Math.round(gaps.reduce((s, g) => s + (g.duration_seconds || 0), 0) / 60);
-                    return (
-                      <div className="flex items-center gap-1.5 text-xs text-warning bg-warning/10 border border-warning/30 rounded-md px-2 py-1">
-                        <AlertTriangle className="w-3 h-3 shrink-0" />
-                        <span>Tracked distance may be incomplete — {gaps.length} gap(s) totaling {totalMin} min</span>
-                      </div>
-                    );
-                  } catch { return null; }
-                })()}
-                {(() => {
-                  const odoDist = trip.distance_km;
-                  const trackDist = trip.tracked_distance_km;
-                  if (odoDist == null || trackDist == null || odoDist === 0) return null;
-                  const diffPct = Math.abs(trackDist - odoDist) / odoDist * 100;
-                  if (diffPct <= 10) return null;
-                  return (
-                    <div className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-2 py-1">
-                      <AlertTriangle className="w-3 h-3 shrink-0" />
-                      <span>⚠ Distance mismatch — possible tracking gaps ({Math.round(diffPct)}% difference)</span>
-                    </div>
-                  );
-                })()}
               </div>
               {trip.end_trust_score != null && (
                 <p className="text-xs text-muted-foreground">

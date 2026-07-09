@@ -458,7 +458,7 @@ export function validateGeoPoint(history, raw, timestamp, opts = {}) {
     return { valid: false, point: null, errors: validation.errors, warnings: validation.warnings };
   }
 
-  const point = { lat, lng, accuracy, isMocked, timestamp, speed: raw.speed ?? null };
+  const point = { lat, lng, accuracy, isMocked, timestamp };
 
   // Jump detection against the previous point
   const prev = history.length > 0 ? history[history.length - 1] : null;
