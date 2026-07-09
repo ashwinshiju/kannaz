@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import {
   Users, Car, MapPin, Route, Fuel, Wrench, FileText, AlertTriangle,
-  Plus, ArrowRight, Activity, Clock, CheckCircle2, TrendingUp
+  Plus, ArrowRight, Activity, Clock, CheckCircle2, TrendingUp, StopCircle
 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import KPICard from '@/components/shared/KPICard';
@@ -17,8 +17,10 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
     loadStats();
   }, []);
 
@@ -61,6 +63,9 @@ export default function Dashboard() {
   })).filter(d => d.value > 0);
 
   const recentTrips = [...s.trips].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 5);
+  const activeUserTrip = currentUser
+    ? s.trips.find((t) => t.status === 'in_progress' && t.employee_id === currentUser.id)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -71,9 +76,14 @@ export default function Dashboard() {
           <p className="text-sm text-muted-foreground mt-1">Fleet operations overview</p>
         </div>
         <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/trips"><Plus className="w-4 h-4 mr-1" /> New Trip</Link>
+          <Button asChild size="sm">
+            <Link to="/trips/new"><Plus className="w-4 h-4 mr-1" /> Start a Trip</Link>
           </Button>
+          {activeUserTrip && (
+            <Button asChild variant="destructive" size="sm">
+              <Link to="/trips"><StopCircle className="w-4 h-4 mr-1" /> End Trip</Link>
+            </Button>
+          )}
         </div>
       </div>
 
