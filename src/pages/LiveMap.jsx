@@ -40,10 +40,6 @@ export default function LiveMap() {
     (sum, t) => sum + (roadDistances[t.id] || 0),
     0
   );
-  const totalTrackedDistance = filtered.reduce(
-    (sum, t) => sum + (t.tracked_distance_km || 0),
-    0
-  );
   const avgTrust =
     filtered.length > 0
       ? Math.round(
@@ -76,7 +72,7 @@ export default function LiveMap() {
       </div>
 
       {/* Aggregate summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
             <Route className="w-5 h-5 text-primary" />
@@ -110,17 +106,6 @@ export default function LiveMap() {
               </p>
             )}
             <p className="text-xs text-muted-foreground">Road Distance (km)</p>
-          </div>
-        </div>
-        <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Route className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <p className="text-2xl font-heading font-bold">
-              {Math.round(totalTrackedDistance * 100) / 100}
-            </p>
-            <p className="text-xs text-muted-foreground">Tracked Distance (km)</p>
           </div>
         </div>
         <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
@@ -203,24 +188,6 @@ export default function LiveMap() {
                     </span>
                   )}
                 </div>
-                {trip.tracked_distance_km != null && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Route className="w-3.5 h-3.5" />
-                      <span className="text-sm">Tracked Distance</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {trip.low_tracking_data && (
-                        <span className="text-[10px] bg-warning/20 text-warning-foreground px-1.5 py-0.5 rounded">
-                          low data
-                        </span>
-                      )}
-                      <span className="text-base font-heading font-bold text-primary">
-                        {trip.tracked_distance_km} km
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
               {trip.end_trust_score != null && (
                 <p className="text-xs text-muted-foreground">

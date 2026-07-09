@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import TripSummaryCard from '@/components/trips/TripSummaryCard';
-import { calculateTrackedDistance } from '@/utils/trackedDistance';
 
 export default function EndTripDialog({ trip, open, onClose }) {
   const { toast } = useToast();
@@ -132,25 +131,6 @@ export default function EndTripDialog({ trip, open, onClose }) {
       const endOdoNum = parseFloat(endOdometer);
       const distance = startOdo != null ? Math.round((endOdoNum - startOdo) * 100) / 100 : null;
 
-      // Retrieve all tracked GPS waypoints for this trip and calculate the
-      // actual driven distance (Haversine sum of consecutive valid points).
-      // Falls back to straight-line start→end if fewer than 2 valid points.
-      let trackedDistance = null;
-      let lowTrackingData = false;
-      try {
-        const points = await base44.entities.TripPoint.filter({ trip_id: trip.id });
-        const result = calculateTrackedDistance(points, {
-          start_lat: trip.start_lat,
-          start_lng: trip.start_lng,
-          end_lat: parseFloat(endLat),
-          end_lng: parseFloat(endLng),
-        });
-        trackedDistance = result.tracked_distance_km;
-        lowTrackingData = result.low_tracking_data;
-      } catch {
-        // best-effort — tracked distance is optional
-      }
-
       const updates = {
         status: 'completed',
         completed_at: new Date().toISOString(),
@@ -161,8 +141,6 @@ export default function EndTripDialog({ trip, open, onClose }) {
         end_gps_metadata: gpsMetadata ? JSON.stringify(gpsMetadata) : '',
         end_location: `GPS: ${parseFloat(endLat).toFixed(6)}, ${parseFloat(endLng).toFixed(6)}`,
         distance_km: distance,
-        tracked_distance_km: trackedDistance,
-        low_tracking_data: lowTrackingData,
       };
 
       await base44.entities.Trip.update(trip.id, updates);
