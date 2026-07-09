@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import VehicleAvailabilityPanel from '@/components/layout/VehicleAvailabilityPanel';
 
 export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
   const { theme, toggleTheme } = useTheme();
@@ -67,12 +68,9 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <div className="px-3 py-2 font-semibold text-sm">Notifications</div>
-            <DropdownMenuSeparator />
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              No new notifications
-            </div>
+          <DropdownMenuContent align="end" className="w-80 p-0">
+            <div className="px-3 py-2 font-semibold text-sm border-b border-border">Fleet Status</div>
+            <VehicleAvailabilityPanel />
           </DropdownMenuContent>
         </DropdownMenu>
 
