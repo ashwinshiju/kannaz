@@ -58,7 +58,7 @@ export default function Settings() {
   };
 
   const [company, setCompany] = useState({
-    name: 'TripBuddy Corp', timezone: 'UTC', currency: 'USD',
+    name: 'TripBuddy Corp', timezone: 'GST', currency: 'AED',
   });
 
   const [tripSettings, setTripSettings] = useState({
@@ -97,6 +97,7 @@ export default function Settings() {
                 <Select value={company.timezone} onValueChange={v => setCompany(p => ({ ...p, timezone: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="GST">Gulf Standard Time (GST)</SelectItem>
                     <SelectItem value="UTC">UTC</SelectItem>
                     <SelectItem value="EST">Eastern (EST)</SelectItem>
                     <SelectItem value="PST">Pacific (PST)</SelectItem>
@@ -110,6 +111,7 @@ export default function Settings() {
                 <Select value={company.currency} onValueChange={v => setCompany(p => ({ ...p, currency: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="AED">AED (د.إ)</SelectItem>
                     <SelectItem value="USD">USD ($)</SelectItem>
                     <SelectItem value="EUR">EUR (€)</SelectItem>
                     <SelectItem value="GBP">GBP (£)</SelectItem>
