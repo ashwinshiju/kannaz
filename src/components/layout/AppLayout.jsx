@@ -6,6 +6,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import MobileNavHeader from '@/components/layout/MobileNavHeader';
+import TripTrackingManager from '@/components/trips/TripTrackingManager';
 import { cn } from '@/lib/utils';
 
 export default function AppLayout() {
@@ -20,6 +21,7 @@ export default function AppLayout() {
 
   return (
     <TabStackProvider>
+      <TripTrackingManager />
       <div className="min-h-screen bg-background">
         {/* Mobile overlay */}
         {mobileOpen && (
