@@ -181,7 +181,7 @@ export default function Trips() {
     },
     { key: 'purpose', label: 'Purpose', render: (val) => <span className="capitalize">{val || '—'}</span> },
     { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
-    { key: 'created_date', label: 'Date', render: (val) => val ? moment(val).format('MMM DD, HH:mm') : '—' },
+    { key: 'created_date', label: 'Date', render: (val) => val ? moment.utc(val).utcOffset(240).format('MMM DD, HH:mm') : '—' },
     {
       key: 'id', label: '', sortable: false,
       render: (_, row) => (
