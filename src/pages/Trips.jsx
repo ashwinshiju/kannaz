@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTripLocationTracking } from '@/hooks/useTripLocationTracking';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Route, Play, CheckCircle2, Clock, MapPin, Navigation } from 'lucide-react';
@@ -47,6 +48,20 @@ export default function Trips() {
   const activeTrip = data.find(
     (t) => t.status === 'in_progress' && t.employee_id === user?.id
   );
+
+  // Background GPS tracking — starts when the current user has an in-progress
+  // trip, stops when the trip ends or is no longer active. Reuses the single
+  // existing tracking service; persists a point every 100s to TripTrackingLog.
+  const { start: startTracking, stop: stopTracking } = useTripLocationTracking();
+
+  useEffect(() => {
+    if (activeTrip) {
+      startTracking(activeTrip.id);
+    } else {
+      stopTracking();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTrip?.id]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);

@@ -1,0 +1,40 @@
+{
+  "name": "TripTrackingLog",
+  "type": "object",
+  "properties": {
+    "trip_id": {
+      "type": "string",
+      "title": "Trip ID"
+    },
+    "latitude": {
+      "type": "number",
+      "title": "Latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "title": "Longitude"
+    },
+    "timestamp_ms": {
+      "type": "number",
+      "title": "Timestamp (ms)"
+    },
+    "trust_score": {
+      "type": "number",
+      "title": "Trust Score"
+    },
+    "gps_metadata": {
+      "type": "string",
+      "title": "GPS Validation Metadata"
+    },
+    "is_valid": {
+      "type": "boolean",
+      "default": true,
+      "title": "Valid Point"
+    }
+  },
+  "required": [
+    "trip_id",
+    "latitude",
+    "longitude"
+  ]
+}

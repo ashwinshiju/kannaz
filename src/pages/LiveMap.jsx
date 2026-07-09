@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Route, Gauge, MapPin, Clock } from 'lucide-react';
-import { useRoadDistances } from '@/hooks/useRoadDistances';
+import { Route, Gauge, MapPin, Clock, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import moment from 'moment';
@@ -31,13 +30,10 @@ export default function LiveMap() {
     [trips, vehicleFilter]
   );
 
-  const { distances: roadDistances, loading: roadLoading } =
-    useRoadDistances(filtered);
-
   // Aggregate totals
   const totalDistance = filtered.reduce((sum, t) => sum + (t.distance_km || 0), 0);
-  const totalRoadDistance = filtered.reduce(
-    (sum, t) => sum + (roadDistances[t.id] || 0),
+  const totalTrackedDistance = filtered.reduce(
+    (sum, t) => sum + (t.tracked_distance_km || 0),
     0
   );
   const avgTrust =
@@ -98,14 +94,10 @@ export default function LiveMap() {
             <Route className="w-5 h-5 text-primary" />
           </div>
           <div>
-            {roadLoading ? (
-              <p className="text-2xl font-heading font-bold animate-pulse">…</p>
-            ) : (
-              <p className="text-2xl font-heading font-bold">
-                {Math.round(totalRoadDistance * 100) / 100}
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground">Road Distance (km)</p>
+            <p className="text-2xl font-heading font-bold">
+              {Math.round(totalTrackedDistance * 100) / 100}
+            </p>
+            <p className="text-xs text-muted-foreground">Tracked Distance (km)</p>
           </div>
         </div>
         <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
@@ -174,20 +166,18 @@ export default function LiveMap() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <Route className="w-3.5 h-3.5" />
-                    <span className="text-sm">Road Distance</span>
+                    <span className="text-sm">Tracked Distance</span>
                   </div>
-                  {roadLoading && roadDistances[trip.id] == null ? (
-                    <span className="text-sm text-muted-foreground animate-pulse">
-                      Calculating…
-                    </span>
-                  ) : (
-                    <span className="text-base font-heading font-bold text-primary">
-                      {roadDistances[trip.id] != null
-                        ? `${roadDistances[trip.id]} km`
-                        : '—'}
-                    </span>
-                  )}
+                  <span className="text-base font-heading font-bold text-primary">
+                    {trip.tracked_distance_km != null ? `${trip.tracked_distance_km} km` : '—'}
+                  </span>
                 </div>
+                {trip.low_tracking_data && (
+                  <div className="flex items-center gap-1.5 text-xs text-warning bg-warning/10 border border-warning/30 rounded-md px-2 py-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                    <span>Low tracking data — distance estimated from start/end points</span>
+                  </div>
+                )}
               </div>
               {trip.end_trust_score != null && (
                 <p className="text-xs text-muted-foreground">

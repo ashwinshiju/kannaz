@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { GPSService } from '@/services/GPSService';
+import { GPSService, calculateDistance } from '@/services/GPSService';
 import { MapPin, Loader2, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -131,16 +131,73 @@ export default function EndTripDialog({ trip, open, onClose }) {
       const endOdoNum = parseFloat(endOdometer);
       const distance = startOdo != null ? Math.round((endOdoNum - startOdo) * 100) / 100 : null;
 
+      // Calculate actual tracked distance from the GPS trail (TripTrackingLog
+      // points persisted every 100s during the trip). Reuses the existing
+      // Haversine function from GPSService — no new distance logic.
+      let trackedDistanceKm = null;
+      let lowTrackingData = false;
+      const endLatNum = parseFloat(endLat);
+      const endLngNum = parseFloat(endLng);
+
+      try {
+        const logPoints = await base44.entities.TripTrackingLog.filter(
+          { trip_id: trip.id },
+          'timestamp_ms',
+          500
+        );
+        // Filter out invalid points (trust score below threshold, or
+        // anomaly/spoofed flag true) so bad readings don't inflate distance.
+        const validPoints = logPoints
+          .filter((p) => p.is_valid !== false)
+          .sort((a, b) => (a.timestamp_ms || 0) - (b.timestamp_ms || 0));
+
+        if (validPoints.length >= 2) {
+          let totalMeters = 0;
+          for (let i = 1; i < validPoints.length; i++) {
+            totalMeters += calculateDistance(
+              validPoints[i - 1].latitude,
+              validPoints[i - 1].longitude,
+              validPoints[i].latitude,
+              validPoints[i].longitude
+            );
+          }
+          trackedDistanceKm = Math.round((totalMeters / 1000) * 100) / 100;
+        } else {
+          // Fewer than 2 valid tracked points — fall back to Haversine
+          // between start and end coordinates, flag as low tracking data.
+          lowTrackingData = true;
+          if (trip.start_lat != null && trip.start_lng != null) {
+            const fallbackMeters = calculateDistance(
+              trip.start_lat, trip.start_lng,
+              endLatNum, endLngNum
+            );
+            trackedDistanceKm = Math.round((fallbackMeters / 1000) * 100) / 100;
+          }
+        }
+      } catch {
+        // Point retrieval failed — fall back to start/end Haversine.
+        lowTrackingData = true;
+        if (trip.start_lat != null && trip.start_lng != null) {
+          const fallbackMeters = calculateDistance(
+            trip.start_lat, trip.start_lng,
+            endLatNum, endLngNum
+          );
+          trackedDistanceKm = Math.round((fallbackMeters / 1000) * 100) / 100;
+        }
+      }
+
       const updates = {
         status: 'completed',
         completed_at: new Date().toISOString(),
         end_odometer: endOdoNum,
-        end_lat: parseFloat(endLat),
-        end_lng: parseFloat(endLng),
+        end_lat: endLatNum,
+        end_lng: endLngNum,
         end_trust_score: gpsMetadata?.trustScore ?? null,
         end_gps_metadata: gpsMetadata ? JSON.stringify(gpsMetadata) : '',
-        end_location: `GPS: ${parseFloat(endLat).toFixed(6)}, ${parseFloat(endLng).toFixed(6)}`,
+        end_location: `GPS: ${endLatNum.toFixed(6)}, ${endLngNum.toFixed(6)}`,
         distance_km: distance,
+        tracked_distance_km: trackedDistanceKm,
+        low_tracking_data: lowTrackingData,
       };
 
       await base44.entities.Trip.update(trip.id, updates);
