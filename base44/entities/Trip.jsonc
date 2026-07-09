@@ -114,6 +114,27 @@
       "default": false,
       "title": "Low Tracking Data"
     },
+    "tracking_gaps": {
+      "type": "string",
+      "title": "Tracking Gaps (JSON)"
+    },
+    "tracking_gap_count": {
+      "type": "number",
+      "title": "Tracking Gap Count"
+    },
+    "raw_points_captured": {
+      "type": "number",
+      "title": "Raw Points Captured"
+    },
+    "valid_points_count": {
+      "type": "number",
+      "title": "Valid Points Count"
+    },
+    "distance_mismatch": {
+      "type": "boolean",
+      "default": false,
+      "title": "Distance Mismatch"
+    },
     "duration_minutes": {
       "type": "number",
       "title": "Duration (min)"

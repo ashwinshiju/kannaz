@@ -178,6 +178,26 @@ export default function LiveMap() {
                     <span>Low tracking data — distance estimated from start/end points</span>
                   </div>
                 )}
+                {trip.distance_mismatch && (
+                  <div className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-2 py-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                    <span>⚠ Distance mismatch — possible tracking gaps</span>
+                  </div>
+                )}
+                {trip.tracking_gap_count > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {trip.tracking_gap_count} tracking gap(s) detected
+                    {trip.low_tracking_data ? ' — tracked distance may be incomplete' : ''}
+                  </p>
+                )}
+                {trip.raw_points_captured != null && trip.valid_points_count != null && (
+                  <p className="text-xs text-muted-foreground">
+                    GPS Points: {trip.valid_points_count}/{trip.raw_points_captured} valid
+                    {trip.raw_points_captured - trip.valid_points_count > 0 && (
+                      <span className="text-warning"> · {trip.raw_points_captured - trip.valid_points_count} discarded</span>
+                    )}
+                  </p>
+                )}
               </div>
               {trip.end_trust_score != null && (
                 <p className="text-xs text-muted-foreground">

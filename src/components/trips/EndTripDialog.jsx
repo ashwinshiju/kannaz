@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { GPSService, calculateDistance } from '@/services/GPSService';
+import { detectGaps, calculateGapAwareDistance, calculateDistanceMismatch, TRACKING_INTERVAL_MS } from '@/services/trackingGapAnalysis';
 import { MapPin, Loader2, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -131,11 +132,18 @@ export default function EndTripDialog({ trip, open, onClose }) {
       const endOdoNum = parseFloat(endOdometer);
       const distance = startOdo != null ? Math.round((endOdoNum - startOdo) * 100) / 100 : null;
 
-      // Calculate actual tracked distance from the GPS trail (TripTrackingLog
-      // points persisted every 100s during the trip). Reuses the existing
-      // Haversine function from GPSService — no new distance logic.
+      // Calculate tracked distance from the GPS trail (TripTrackingLog points
+      // persisted every ~15s during the trip). Uses gap-aware analysis:
+      // detects time gaps >2.5× the expected interval, estimates missing
+      // distance via speed interpolation, and flags incomplete segments.
+      // Reuses GPSService's Haversine — no new distance logic.
       let trackedDistanceKm = null;
       let lowTrackingData = false;
+      let trackingGaps = [];
+      let trackingGapCount = 0;
+      let hasIncompleteGaps = false;
+      let rawPointsCaptured = 0;
+      let validPointsCount = 0;
       const endLatNum = parseFloat(endLat);
       const endLngNum = parseFloat(endLng);
 
@@ -145,23 +153,33 @@ export default function EndTripDialog({ trip, open, onClose }) {
           'timestamp_ms',
           500
         );
+        const sortedPoints = logPoints.sort(
+          (a, b) => (a.timestamp_ms || 0) - (b.timestamp_ms || 0)
+        );
+        rawPointsCaptured = sortedPoints.length;
+
         // Filter out invalid points (trust score below threshold, or
         // anomaly/spoofed flag true) so bad readings don't inflate distance.
-        const validPoints = logPoints
-          .filter((p) => p.is_valid !== false)
-          .sort((a, b) => (a.timestamp_ms || 0) - (b.timestamp_ms || 0));
+        const validPoints = sortedPoints.filter((p) => p.is_valid !== false);
+        validPointsCount = validPoints.length;
 
         if (validPoints.length >= 2) {
-          let totalMeters = 0;
-          for (let i = 1; i < validPoints.length; i++) {
-            totalMeters += calculateDistance(
-              validPoints[i - 1].latitude,
-              validPoints[i - 1].longitude,
-              validPoints[i].latitude,
-              validPoints[i].longitude
-            );
+          // Detect tracking gaps — segments where time between consecutive
+          // points exceeds 2.5× the expected interval.
+          const { gaps } = detectGaps(validPoints, TRACKING_INTERVAL_MS);
+          trackingGapCount = gaps.length;
+
+          // Calculate distance with gap awareness: continuous segments use
+          // Haversine; gap segments use speed interpolation when available,
+          // otherwise are excluded and flagged as incomplete.
+          const result = calculateGapAwareDistance(validPoints, gaps, TRACKING_INTERVAL_MS);
+          trackedDistanceKm = result.trackedDistanceKm;
+          trackingGaps = result.gapDetails;
+          hasIncompleteGaps = result.hasIncompleteGaps;
+
+          if (hasIncompleteGaps) {
+            lowTrackingData = true;
           }
-          trackedDistanceKm = Math.round((totalMeters / 1000) * 100) / 100;
         } else {
           // Fewer than 2 valid tracked points — fall back to Haversine
           // between start and end coordinates, flag as low tracking data.
@@ -186,6 +204,9 @@ export default function EndTripDialog({ trip, open, onClose }) {
         }
       }
 
+      // Calculate discrepancy between tracked and odometer distance.
+      const mismatchResult = calculateDistanceMismatch(trackedDistanceKm, distance);
+
       const updates = {
         status: 'completed',
         completed_at: new Date().toISOString(),
@@ -198,6 +219,11 @@ export default function EndTripDialog({ trip, open, onClose }) {
         distance_km: distance,
         tracked_distance_km: trackedDistanceKm,
         low_tracking_data: lowTrackingData,
+        tracking_gaps: trackingGaps.length > 0 ? JSON.stringify(trackingGaps) : '',
+        tracking_gap_count: trackingGapCount,
+        raw_points_captured: rawPointsCaptured,
+        valid_points_count: validPointsCount,
+        distance_mismatch: mismatchResult.mismatch,
       };
 
       await base44.entities.Trip.update(trip.id, updates);

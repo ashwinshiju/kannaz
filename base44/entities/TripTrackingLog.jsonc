@@ -18,6 +18,10 @@
       "type": "number",
       "title": "Timestamp (ms)"
     },
+    "speed_kmh": {
+      "type": "number",
+      "title": "Speed (km/h)"
+    },
     "trust_score": {
       "type": "number",
       "title": "Trust Score"
