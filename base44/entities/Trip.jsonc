@@ -105,15 +105,6 @@
       "type": "number",
       "title": "Distance (km)"
     },
-    "tracked_distance_km": {
-      "type": "number",
-      "title": "Tracked Distance (km)"
-    },
-    "low_tracking_data": {
-      "type": "boolean",
-      "default": false,
-      "title": "Low Tracking Data"
-    },
     "duration_minutes": {
       "type": "number",
       "title": "Duration (min)"

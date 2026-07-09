@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { GPSService, calculateDistance } from '@/services/GPSService';
+import { GPSService } from '@/services/GPSService';
 import { MapPin, Loader2, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -131,49 +131,6 @@ export default function EndTripDialog({ trip, open, onClose }) {
       const endOdoNum = parseFloat(endOdometer);
       const distance = startOdo != null ? Math.round((endOdoNum - startOdo) * 100) / 100 : null;
 
-      // --- Compute actual tracked distance from persisted GPS points ---
-      // Retrieve all tracking-log entries for this trip, ordered by time.
-      const trackingPoints = await base44.entities.TripTrackingLog.filter(
-        { trip_id: trip.id },
-        'created_date',
-        1000
-      );
-
-      // Filter to valid points only — reuse the same quality criteria
-      // applied during tracking (trust score, spoof/jump/mock flags).
-      const validPoints = trackingPoints
-        .filter((p) => p.is_valid !== false && p.latitude != null && p.longitude != null)
-        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-      let trackedDistanceKm = null;
-      let lowTrackingData = false;
-
-      if (validPoints.length >= 2) {
-        // Sum Haversine distance between each consecutive pair of valid points.
-        let totalMeters = 0;
-        for (let i = 1; i < validPoints.length; i++) {
-          totalMeters += calculateDistance(
-            validPoints[i - 1].latitude,
-            validPoints[i - 1].longitude,
-            validPoints[i].latitude,
-            validPoints[i].longitude
-          );
-        }
-        trackedDistanceKm = Math.round((totalMeters / 1000) * 100) / 100;
-      } else {
-        // Fewer than 2 valid tracked points — fall back to Haversine
-        // between start and end coordinates, and flag as low-tracking-data.
-        lowTrackingData = true;
-        const sLat = trip.start_lat;
-        const sLng = trip.start_lng;
-        const eLat = parseFloat(endLat);
-        const eLng = parseFloat(endLng);
-        if (sLat != null && sLng != null) {
-          const meters = calculateDistance(sLat, sLng, eLat, eLng);
-          trackedDistanceKm = Math.round((meters / 1000) * 100) / 100;
-        }
-      }
-
       const updates = {
         status: 'completed',
         completed_at: new Date().toISOString(),
@@ -184,8 +141,6 @@ export default function EndTripDialog({ trip, open, onClose }) {
         end_gps_metadata: gpsMetadata ? JSON.stringify(gpsMetadata) : '',
         end_location: `GPS: ${parseFloat(endLat).toFixed(6)}, ${parseFloat(endLng).toFixed(6)}`,
         distance_km: distance,
-        tracked_distance_km: trackedDistanceKm,
-        low_tracking_data: lowTrackingData,
       };
 
       await base44.entities.Trip.update(trip.id, updates);
