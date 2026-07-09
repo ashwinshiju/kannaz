@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Route, Gauge, MapPin, Clock, AlertTriangle } from 'lucide-react';
+import { Route, Gauge, MapPin, Clock, AlertTriangle, Navigation } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import moment from 'moment';
@@ -203,6 +204,17 @@ export default function LiveMap() {
                 <p className="text-xs text-muted-foreground">
                   GPS Trust Score: {trip.end_trust_score}/100
                 </p>
+              )}
+              {trip.start_lat != null && trip.start_lng != null && trip.end_lat != null && trip.end_lng != null && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&origin=${trip.start_lat},${trip.start_lng}&destination=${trip.end_lat},${trip.end_lng}&travelmode=driving`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1">
+                    <Navigation className="w-3.5 h-3.5" /> Route
+                  </Button>
+                </a>
               )}
             </div>
           ))}
