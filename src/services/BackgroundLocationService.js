@@ -42,6 +42,7 @@ export async function startTripTracking(tripId, handlers = {}) {
         lat: coords.latitude,
         lng: coords.longitude,
         accuracy: coords.accuracy,
+        speed: coords.speed ?? null,
         isMocked: pos.isMocked ?? false,
         timestamp: pos.timestamp ?? Date.now(),
       });

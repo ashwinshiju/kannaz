@@ -132,10 +132,19 @@ export default function EndTripDialog({ trip, open, onClose }) {
       const distance = startOdo != null ? Math.round((endOdoNum - startOdo) * 100) / 100 : null;
 
       // Calculate actual tracked distance from the GPS trail (TripTrackingLog
-      // points persisted every 100s during the trip). Reuses the existing
-      // Haversine function from GPSService — no new distance logic.
+      // points persisted at adaptive intervals during the trip). Reuses the
+      // existing Haversine function from GPSService — no new distance logic.
+      //
+      // Gap detection: if the time between consecutive points exceeds 2.5×
+      // the expected tracking interval (15s), that segment is flagged as a
+      // tracking gap. For gaps, distance is estimated using average GPS speed
+      // × gap duration (if speed data is available); otherwise the gap
+      // segment is excluded from tracked distance and the trip is flagged.
       let trackedDistanceKm = null;
       let lowTrackingData = false;
+      let trackingGaps = [];
+      let rawPointsCaptured = 0;
+      let validPointsCount = 0;
       const endLatNum = parseFloat(endLat);
       const endLngNum = parseFloat(endLng);
 
@@ -145,26 +154,62 @@ export default function EndTripDialog({ trip, open, onClose }) {
           'timestamp_ms',
           500
         );
+
+        rawPointsCaptured = logPoints.length;
+
         // Filter out invalid points (trust score below threshold, or
         // anomaly/spoofed flag true) so bad readings don't inflate distance.
         const validPoints = logPoints
           .filter((p) => p.is_valid !== false)
           .sort((a, b) => (a.timestamp_ms || 0) - (b.timestamp_ms || 0));
 
+        validPointsCount = validPoints.length;
+
+        const EXPECTED_INTERVAL_MS = 15_000;
+        const GAP_THRESHOLD_MS = EXPECTED_INTERVAL_MS * 2.5; // 37,500ms
+
         if (validPoints.length >= 2) {
           let totalMeters = 0;
+          let hasUnresolvableGaps = false;
+
           for (let i = 1; i < validPoints.length; i++) {
-            totalMeters += calculateDistance(
-              validPoints[i - 1].latitude,
-              validPoints[i - 1].longitude,
-              validPoints[i].latitude,
-              validPoints[i].longitude
-            );
+            const prev = validPoints[i - 1];
+            const curr = validPoints[i];
+            const dtMs = (curr.timestamp_ms || 0) - (prev.timestamp_ms || 0);
+
+            if (dtMs > GAP_THRESHOLD_MS) {
+              // Tracking gap detected
+              const gapDurationSec = dtMs / 1000;
+              trackingGaps.push({
+                start_time: prev.timestamp_ms,
+                end_time: curr.timestamp_ms,
+                duration_seconds: Math.round(gapDurationSec),
+              });
+
+              // Estimate gap distance using average speed if available
+              const prevSpeed = prev.speed; // m/s from Geolocation API
+              const currSpeed = curr.speed; // m/s
+              if (prevSpeed != null || currSpeed != null) {
+                const avgSpeed = ((prevSpeed || 0) + (currSpeed || 0)) / 2;
+                totalMeters += avgSpeed * gapDurationSec;
+              } else {
+                // No speed data — exclude from tracked distance, flag as incomplete
+                hasUnresolvableGaps = true;
+              }
+            } else {
+              // Normal segment — use Haversine
+              totalMeters += calculateDistance(
+                prev.latitude, prev.longitude,
+                curr.latitude, curr.longitude
+              );
+            }
           }
+
           trackedDistanceKm = Math.round((totalMeters / 1000) * 100) / 100;
+          if (hasUnresolvableGaps) {
+            lowTrackingData = true;
+          }
         } else {
-          // Fewer than 2 valid tracked points — fall back to Haversine
-          // between start and end coordinates, flag as low tracking data.
           lowTrackingData = true;
           if (trip.start_lat != null && trip.start_lng != null) {
             const fallbackMeters = calculateDistance(
@@ -198,6 +243,9 @@ export default function EndTripDialog({ trip, open, onClose }) {
         distance_km: distance,
         tracked_distance_km: trackedDistanceKm,
         low_tracking_data: lowTrackingData,
+        tracking_gaps: trackingGaps.length > 0 ? JSON.stringify(trackingGaps) : '',
+        raw_points_captured: rawPointsCaptured || null,
+        valid_points_count: validPointsCount || null,
       };
 
       await base44.entities.Trip.update(trip.id, updates);
