@@ -9,7 +9,10 @@ import { GeofenceMonitor } from './geofence';
 
 export const GPS_DEFAULTS = {
   maxAccuracyMeters: 100,
-  maxRealisticSpeedKmh: 200,
+  // Highway ceiling: legitimate driving up to ~160 km/h + 20 km/h buffer
+  // for GPS measurement noise. Only the raw speed ceiling is loosened —
+  // spoofing detection heuristics are untouched.
+  maxRealisticSpeedKmh: 180,
   nullIslandAllowed: false,
   watchTimeoutMs: 15000,
   enableHighAccuracy: true,

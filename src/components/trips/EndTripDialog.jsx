@@ -144,6 +144,9 @@ export default function EndTripDialog({ trip, open, onClose }) {
       let hasIncompleteGaps = false;
       let rawPointsCaptured = 0;
       let validPointsCount = 0;
+      let discardedJumpCount = 0;
+      let discardedLowTrustCount = 0;
+      let discardedSpoofedCount = 0;
       const endLatNum = parseFloat(endLat);
       const endLngNum = parseFloat(endLng);
 
@@ -162,6 +165,27 @@ export default function EndTripDialog({ trip, open, onClose }) {
         // anomaly/spoofed flag true) so bad readings don't inflate distance.
         const validPoints = sortedPoints.filter((p) => p.is_valid !== false);
         validPointsCount = validPoints.length;
+
+        // Per-trip discard breakdown: categorize each invalid point by the
+        // filter that caused its rejection. Priority: spoofing > jump > low
+        // trust — so the three counts sum to total discarded. Each point's
+        // rejection reason is read from its persisted gps_metadata JSON.
+        const invalidPoints = sortedPoints.filter((p) => p.is_valid === false);
+        for (const p of invalidPoints) {
+          let meta = {};
+          try {
+            meta = typeof p.gps_metadata === 'string'
+              ? JSON.parse(p.gps_metadata || '{}')
+              : (p.gps_metadata || {});
+          } catch { /* treat as empty */ }
+          if (meta.spoofed || meta.isMocked) {
+            discardedSpoofedCount++;
+          } else if (meta.isJump) {
+            discardedJumpCount++;
+          } else {
+            discardedLowTrustCount++;
+          }
+        }
 
         if (validPoints.length >= 2) {
           // Detect tracking gaps — segments where time between consecutive
@@ -223,6 +247,9 @@ export default function EndTripDialog({ trip, open, onClose }) {
         tracking_gap_count: trackingGapCount,
         raw_points_captured: rawPointsCaptured,
         valid_points_count: validPointsCount,
+        discarded_jump_count: discardedJumpCount,
+        discarded_low_trust_count: discardedLowTrustCount,
+        discarded_spoofed_count: discardedSpoofedCount,
         distance_mismatch: mismatchResult.mismatch,
       };
 

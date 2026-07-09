@@ -130,6 +130,18 @@
       "type": "number",
       "title": "Valid Points Count"
     },
+    "discarded_jump_count": {
+      "type": "number",
+      "title": "Discarded \u2014 Jump Detection"
+    },
+    "discarded_low_trust_count": {
+      "type": "number",
+      "title": "Discarded \u2014 Low Trust Score"
+    },
+    "discarded_spoofed_count": {
+      "type": "number",
+      "title": "Discarded \u2014 Spoofing Protection"
+    },
     "distance_mismatch": {
       "type": "boolean",
       "default": false,

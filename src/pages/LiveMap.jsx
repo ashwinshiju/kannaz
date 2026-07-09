@@ -192,12 +192,27 @@ export default function LiveMap() {
                   </p>
                 )}
                 {trip.raw_points_captured != null && trip.valid_points_count != null && (
-                  <p className="text-xs text-muted-foreground">
-                    GPS Points: {trip.valid_points_count}/{trip.raw_points_captured} valid
+                  <div className="space-y-0.5">
+                    <p className="text-xs text-muted-foreground">
+                      GPS Points: {trip.valid_points_count}/{trip.raw_points_captured} valid
+                      {trip.raw_points_captured - trip.valid_points_count > 0 && (
+                        <span className="text-warning"> · {trip.raw_points_captured - trip.valid_points_count} discarded</span>
+                      )}
+                    </p>
                     {trip.raw_points_captured - trip.valid_points_count > 0 && (
-                      <span className="text-warning"> · {trip.raw_points_captured - trip.valid_points_count} discarded</span>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
+                        {(trip.discarded_spoofed_count ?? 0) > 0 && (
+                          <span className="text-destructive">Spoofing: {trip.discarded_spoofed_count}</span>
+                        )}
+                        {(trip.discarded_jump_count ?? 0) > 0 && (
+                          <span className="text-warning">Jumps: {trip.discarded_jump_count}</span>
+                        )}
+                        {(trip.discarded_low_trust_count ?? 0) > 0 && (
+                          <span className="text-muted-foreground">Low trust: {trip.discarded_low_trust_count}</span>
+                        )}
+                      </div>
                     )}
-                  </p>
+                  </div>
                 )}
               </div>
               {trip.end_trust_score != null && (
