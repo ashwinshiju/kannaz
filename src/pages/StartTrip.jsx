@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { GPSService, GPS_DEFAULTS } from '@/services/GPSService';
-import { ChevronLeft, MapPin, Loader2, AlertTriangle, Car, Lock } from 'lucide-react';
+import { ChevronLeft, MapPin, Loader2, AlertTriangle, Car, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -90,30 +90,45 @@ export default function StartTrip() {
     enabled: !!vehicleId,
   });
 
+  // Track the auto-fetched value so we can detect when the user overrides it.
+  const autoOdometerRef = useRef('');
+
   // Pre-fill the start odometer when data arrives.
   useEffect(() => {
     if (!odometerData) {
       setStartOdometer('');
       setOdometerLocked(false);
       setOdometerManuallyEntered(false);
+      autoOdometerRef.current = '';
       return;
     }
     const { lastTripEndOdometer, vehicleOdometer } = odometerData;
-    if (lastTripEndOdometer != null) {
-      setStartOdometer(String(lastTripEndOdometer));
-      setOdometerLocked(true);
-      setOdometerManuallyEntered(false);
-    } else if (vehicleOdometer != null) {
-      setStartOdometer(String(vehicleOdometer));
+    const fetched = lastTripEndOdometer != null ? lastTripEndOdometer : vehicleOdometer;
+    if (fetched != null) {
+      autoOdometerRef.current = String(fetched);
+      setStartOdometer(String(fetched));
       setOdometerLocked(true);
       setOdometerManuallyEntered(false);
     } else {
       // No prior odometer value — allow manual entry as fallback.
+      autoOdometerRef.current = '';
       setStartOdometer('');
       setOdometerLocked(false);
       setOdometerManuallyEntered(true);
     }
   }, [odometerData]);
+
+  const handleOdometerChange = (e) => {
+    const val = e.target.value;
+    setStartOdometer(val);
+    // Flag as manually entered once the user deviates from the auto-fetched value.
+    setOdometerManuallyEntered(val !== autoOdometerRef.current);
+  };
+
+  const handleEditOdometer = () => {
+    setOdometerLocked(false);
+    setOdometerManuallyEntered(true);
+  };
 
   const handleCaptureGPS = async () => {
     setGpsCapturing(true);
@@ -297,28 +312,42 @@ export default function StartTrip() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="start_odometer">
+              <Label htmlFor="start_odometer" className="flex items-center gap-1.5">
                 Start odometer (km)
                 {odometerLocked && (
-                  <span className="ml-1.5 inline-flex items-center gap-0.5 text-xs text-muted-foreground font-normal">
-                    <Lock className="w-3 h-3" /> auto
+                  <span className="ml-1 inline-flex items-center gap-0.5 text-xs text-muted-foreground font-normal">
+                    auto
                   </span>
                 )}
               </Label>
-              <Input
-                id="start_odometer"
-                type="number"
-                step="0.01"
-                value={startOdometer}
-                onChange={e => setStartOdometer(e.target.value)}
-                placeholder={odometerLocked ? '' : 'Enter odometer (no prior record)'}
-                readOnly={odometerLocked}
-                disabled={odometerLoading}
-                className={odometerLocked ? 'bg-muted/50 cursor-not-allowed' : ''}
-              />
-              {odometerManuallyEntered && (
+              <div className="relative">
+                <Input
+                  id="start_odometer"
+                  type="number"
+                  step="0.01"
+                  value={startOdometer}
+                  onChange={handleOdometerChange}
+                  placeholder={odometerLoading ? 'Fetching...' : 'Enter odometer (no prior record)'}
+                  readOnly={odometerLocked}
+                  disabled={odometerLoading}
+                  className={odometerLocked ? 'bg-muted/50 cursor-not-allowed pr-9' : ''}
+                />
+                {odometerLocked && (
+                  <button
+                    type="button"
+                    onClick={handleEditOdometer}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+                    title="Edit odometer reading"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              {odometerManuallyEntered && startOdometer !== '' && (
                 <p className="text-xs text-muted-foreground">
-                  No prior odometer on record — manually entered value will be flagged.
+                  {odometerLocked
+                    ? 'No prior odometer on record — manually entered value will be flagged.'
+                    : 'Odometer manually adjusted — value will be flagged as manually entered.'}
                 </p>
               )}
             </div>
