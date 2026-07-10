@@ -7,6 +7,17 @@
     <link rel="manifest" href="/manifest.json" />
     <title>KANAZ — Fleet Operations</title>
     <meta name="description" content="Enterprise Fleet Operations Management System" />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('tripbuddy-theme');
+          var isDark = stored
+            ? stored === 'dark'
+            : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (isDark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Car } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import FormModal from '@/components/shared/FormModal';
@@ -48,6 +48,7 @@ const columns = [
 ];
 
 export default function Vehicles() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data = [], isLoading: loading, refetch } = useQuery({
@@ -125,7 +126,7 @@ export default function Vehicles() {
               { value: 'electric', label: 'Electric' }, { value: 'hybrid', label: 'Hybrid' },
             ]},
           ]}
-          onEdit={openEdit} onDelete={setDeleteDialog} onView={(row) => window.location.href = `/vehicles/${row.id}`}
+          onEdit={openEdit} onDelete={setDeleteDialog} onView={(row) => navigate(`/vehicles/${row.id}`)}
           emptyTitle="No vehicles yet" emptyAction={openCreate} emptyActionLabel="Add Vehicle"
         />
         <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Vehicle' : 'Add Vehicle'}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Bell, Sun, Moon, Menu, LogOut, User, Settings } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useTheme from '@/hooks/useTheme';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger
@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import VehicleAvailabilityPanel from '@/components/layout/VehicleAvailabilityPanel';
 
 export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [user, setUser] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -19,8 +20,13 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  const handleLogout = () => {
-    base44.auth.logout('/login');
+  const handleLogout = async () => {
+    try {
+      await base44.auth.logout();
+      navigate('/login');
+    } catch {
+      navigate('/login');
+    }
   };
 
   return (
