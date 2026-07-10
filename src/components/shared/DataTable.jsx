@@ -164,7 +164,7 @@ export default function DataTable({
                   ))}
                   {hasActions && (
                     <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-1 md:gap-1 gap-y-2 flex-wrap justify-end">
                         {onView && (
                           <Button variant="ghost" size="sm" onClick={() => onView(row)} aria-label="View" className="h-11 w-11 md:h-8 md:w-8 p-0">
                             <Eye className="w-4 h-4" />
