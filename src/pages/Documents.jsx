@@ -65,21 +65,51 @@ export default function Documents() {
 
   const handleSave = async () => {
     setSaving(true);
+    setModalOpen(false);
     if (editing) {
-      await base44.entities.Document.update(editing.id, form);
-      toast({ title: 'Document updated' });
+      const previous = data;
+      setData(prev => prev.map(item => item.id === editing.id ? { ...item, ...form } : item));
+      try {
+        await base44.entities.Document.update(editing.id, form);
+        toast({ title: 'Document updated' });
+      } catch {
+        setData(previous);
+        toast({ title: 'Failed to update document', variant: 'destructive' });
+      } finally {
+        setSaving(false);
+      }
     } else {
-      await base44.entities.Document.create(form);
-      toast({ title: 'Document added' });
+      const tempId = `temp-${Date.now()}`;
+      const previous = data;
+      setData(prev => [...prev, { ...form, id: tempId }]);
+      try {
+        const created = await base44.entities.Document.create(form);
+        setData(prev => prev.map(item => item.id === tempId ? created : item));
+        toast({ title: 'Document added' });
+      } catch {
+        setData(previous);
+        toast({ title: 'Failed to add document', variant: 'destructive' });
+      } finally {
+        setSaving(false);
+      }
     }
-    setSaving(false); setModalOpen(false); load();
   };
 
   const handleDelete = async () => {
+    const previous = data;
+    const item = deleteDialog;
+    setData(prev => prev.filter(d => d.id !== item.id));
+    setDeleteDialog(null);
     setSaving(true);
-    await base44.entities.Document.delete(deleteDialog.id);
-    toast({ title: 'Document deleted' });
-    setSaving(false); setDeleteDialog(null); load();
+    try {
+      await base44.entities.Document.delete(item.id);
+      toast({ title: 'Document deleted' });
+    } catch {
+      setData(previous);
+      toast({ title: 'Failed to delete document', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return <div className="space-y-6"><PageHeader title="Documents" /><TableSkeleton /></div>;

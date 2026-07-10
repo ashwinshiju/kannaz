@@ -7,6 +7,7 @@ import FormModal from '@/components/shared/FormModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import PullToRefresh from '@/components/shared/PullToRefresh';
 import { useToast } from '@/components/ui/use-toast';
 import moment from 'moment';
 
@@ -58,27 +59,58 @@ export default function MaintenancePage() {
 
   const handleSave = async () => {
     setSaving(true);
+    setModalOpen(false);
     if (editing) {
-      await base44.entities.Maintenance.update(editing.id, form);
-      toast({ title: 'Maintenance updated' });
+      const previous = data;
+      setData(prev => prev.map(item => item.id === editing.id ? { ...item, ...form } : item));
+      try {
+        await base44.entities.Maintenance.update(editing.id, form);
+        toast({ title: 'Maintenance updated' });
+      } catch {
+        setData(previous);
+        toast({ title: 'Failed to update maintenance', variant: 'destructive' });
+      } finally {
+        setSaving(false);
+      }
     } else {
-      await base44.entities.Maintenance.create(form);
-      toast({ title: 'Maintenance scheduled' });
+      const tempId = `temp-${Date.now()}`;
+      const previous = data;
+      setData(prev => [...prev, { ...form, id: tempId }]);
+      try {
+        const created = await base44.entities.Maintenance.create(form);
+        setData(prev => prev.map(item => item.id === tempId ? created : item));
+        toast({ title: 'Maintenance scheduled' });
+      } catch {
+        setData(previous);
+        toast({ title: 'Failed to schedule maintenance', variant: 'destructive' });
+      } finally {
+        setSaving(false);
+      }
     }
-    setSaving(false); setModalOpen(false); load();
   };
 
   const handleDelete = async () => {
+    const previous = data;
+    const item = deleteDialog;
+    setData(prev => prev.filter(d => d.id !== item.id));
+    setDeleteDialog(null);
     setSaving(true);
-    await base44.entities.Maintenance.delete(deleteDialog.id);
-    toast({ title: 'Record deleted' });
-    setSaving(false); setDeleteDialog(null); load();
+    try {
+      await base44.entities.Maintenance.delete(item.id);
+      toast({ title: 'Record deleted' });
+    } catch {
+      setData(previous);
+      toast({ title: 'Failed to delete record', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return <div className="space-y-6"><PageHeader title="Maintenance" /><TableSkeleton /></div>;
 
   return (
     <div>
+      <PullToRefresh onRefresh={load}>
       <PageHeader title="Maintenance" subtitle={`${data.length} records`} action={openCreate} actionLabel="Schedule Maintenance" actionIcon={Wrench} />
       <DataTable
         data={data} columns={columns} searchPlaceholder="Search maintenance..."
@@ -89,6 +121,7 @@ export default function MaintenancePage() {
         onEdit={openEdit} onDelete={setDeleteDialog}
         emptyTitle="No maintenance records" emptyAction={openCreate} emptyActionLabel="Schedule Maintenance"
       />
+      </PullToRefresh>
       <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Maintenance' : 'Schedule Maintenance'}
         fields={fields} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
       <ConfirmDialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)} onConfirm={handleDelete}
