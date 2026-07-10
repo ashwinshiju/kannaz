@@ -256,7 +256,7 @@ export default function StartTrip() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] flex items-start justify-center py-6">
+    <div className="min-h-[calc(100vh-8rem)] flex items-start justify-center py-6 safe-top safe-bottom">
       <div className="w-full max-w-lg">
         {/* Header: back link + avatar */}
         <div className="flex items-center justify-between mb-6">
