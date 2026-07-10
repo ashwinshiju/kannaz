@@ -12,6 +12,7 @@ import KPICard from '@/components/shared/KPICard';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import CompletedTripsList from '@/components/reports/CompletedTripsList';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -139,9 +140,13 @@ export default function Reports() {
               ) : <div className="h-[250px] flex items-center justify-center text-sm text-muted-foreground">No trip data</div>}
             </ChartCard>
           </div>
-        </TabsContent>
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold mb-3">Completed Trips</h3>
+            <CompletedTripsList trips={s.trips} />
+          </div>
+          </TabsContent>
 
-        <TabsContent value="vehicles" className="mt-4">
+          <TabsContent value="vehicles" className="mt-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <ChartCard title="Vehicles by Fuel Type">
               {vehiclesByFuel.length > 0 ? (

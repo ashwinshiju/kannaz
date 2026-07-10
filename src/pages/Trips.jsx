@@ -181,7 +181,16 @@ export default function Trips() {
     },
     { key: 'purpose', label: 'Purpose', render: (val) => <span className="capitalize">{val || '—'}</span> },
     { key: 'trip_number', label: 'Trip #', render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
-    { key: 'created_date', label: 'Date', render: (val) => val ? moment.utc(val).utcOffset(240).format('MMM DD, HH:mm') : '—' },
+    { key: 'created_date', label: 'Date', render: (val, row) => {
+      const tz = 240;
+      const start = row.started_at ? moment.utc(row.started_at).utcOffset(tz) : (val ? moment.utc(val).utcOffset(tz) : null);
+      if (!start || !start.isValid()) return '—';
+      const startStr = start.format('MMM DD, HH:mm');
+      if (row.status === 'completed' && row.completed_at) {
+        return `${startStr} - ${moment.utc(row.completed_at).utcOffset(tz).format('HH:mm')}`;
+      }
+      return startStr;
+    }},
     {
       key: 'id', label: '', sortable: false,
       render: (_, row) => (
