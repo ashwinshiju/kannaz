@@ -69,7 +69,11 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80 p-0">
-            <div className="px-3 py-2 font-semibold text-sm border-b border-border">Fleet Status</div>
+            <DropdownMenuItem asChild>
+              <Link to="/trips" className="px-3 py-2 font-semibold text-sm border-b border-border block cursor-pointer hover:bg-accent/50">
+                Fleet Status
+              </Link>
+            </DropdownMenuItem>
             <VehicleAvailabilityPanel />
           </DropdownMenuContent>
         </DropdownMenu>

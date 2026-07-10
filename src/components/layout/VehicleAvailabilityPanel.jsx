@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Car, User, Loader2, CircleDot } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -57,13 +58,13 @@ export default function VehicleAvailabilityPanel() {
         ) : (
           <div className="space-y-1">
             {available.map((v) => (
-              <div key={v.id} className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-accent/50 transition-colors">
+              <Link key={v.id} to="/trips" className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-accent/50 transition-colors">
                 <Car className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium truncate">{v.name || `${v.make} ${v.model}`}</p>
                   <p className="text-[10px] text-muted-foreground font-mono">{v.reg_no}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
@@ -81,7 +82,7 @@ export default function VehicleAvailabilityPanel() {
             </div>
             <div className="space-y-1">
               {inUse.map((v) => (
-                <div key={v.id} className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-accent/50 transition-colors">
+                <Link key={v.id} to="/trips" className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-accent/50 transition-colors">
                   <Car className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium truncate">{v.name || `${v.make} ${v.model}`}</p>
@@ -91,7 +92,7 @@ export default function VehicleAvailabilityPanel() {
                     <User className="w-3 h-3" />
                     <span className="max-w-[80px] truncate">{usageByVehicleId[v.id]}</span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
