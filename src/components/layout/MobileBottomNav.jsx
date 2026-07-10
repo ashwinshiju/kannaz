@@ -19,7 +19,7 @@ export default function MobileBottomNav() {
   return (
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-card border-t border-border flex items-center justify-around px-1"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: 'auto' }}
     >
       {tabs.map(tab => {
         const isActive = tab.path === '/'

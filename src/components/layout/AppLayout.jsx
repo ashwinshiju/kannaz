@@ -48,7 +48,7 @@ export default function AppLayout() {
           sidebarCollapsed={collapsed}
         />
         <main className={cn(
-          "pt-[calc(4rem_+_env(safe-area-inset-top))] min-h-screen transition-all duration-300 pb-16 md:pb-0",
+          "pt-[calc(4rem_+_env(safe-area-inset-top))] min-h-screen transition-all duration-300 pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0",
           collapsed ? "lg:ml-[68px]" : "lg:ml-[250px]"
         )}>
           <div className="p-4 lg:p-6">

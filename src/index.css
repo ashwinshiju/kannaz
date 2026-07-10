@@ -138,4 +138,13 @@
   nav {
     overscroll-behavior: none;
   }
+
+  @media (max-width: 768px) {
+    .scrollbar-thin::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-thin {
+      scrollbar-width: none;
+    }
+  }
 }
