@@ -3,8 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Building2, Car, MapPin, Route, Fuel,
   Wrench, FileText, BarChart3, Map, Settings, Shield, ClipboardList,
-  ChevronLeft, ChevronRight, ChevronDown, Truck
+  ChevronLeft, ChevronRight, ChevronDown
 } from 'lucide-react';
+
+const KANAZ_LOGO = 'https://media.base44.com/images/public/6a4c8bd5aa47eccb6a382770/29e671028_Kanas.png';
 import { cn } from '@/lib/utils';
 
 const navGroups = [
@@ -74,11 +76,9 @@ export default function Sidebar({ collapsed, onToggle, className }) {
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-border shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-            <Truck className="w-4 h-4 text-primary-foreground" />
-          </div>
+          <img src={KANAZ_LOGO} alt="KANAZ" className="w-8 h-8 rounded-lg object-cover shrink-0" />
           {!collapsed && (
-            <span className="font-bold text-lg tracking-tight truncate">TripBuddy</span>
+            <span className="font-bold text-lg tracking-tight truncate">KANAZ</span>
           )}
         </div>
       </div>

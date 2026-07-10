@@ -46,7 +46,7 @@ const AuthenticatedApp = () => {
         <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 flex items-center justify-center bg-background">
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-            <p className="text-sm text-muted-foreground">Loading TripBuddy...</p>
+            <p className="text-sm text-muted-foreground">Loading KANAZ...</p>
           </div>
         </motion.div>
       ) : authError?.type === 'user_not_registered' ? (

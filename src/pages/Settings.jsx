@@ -58,7 +58,7 @@ export default function Settings() {
   };
 
   const [company, setCompany] = useState({
-    name: 'TripBuddy Corp', timezone: 'GST', currency: 'AED',
+    name: 'KANAZ Corp', timezone: 'GST', currency: 'AED',
   });
 
   const [tripSettings, setTripSettings] = useState({
