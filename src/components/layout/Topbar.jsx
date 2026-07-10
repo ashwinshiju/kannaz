@@ -38,7 +38,7 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
     >
       {/* Left: Mobile menu + Search */}
       <div className="flex items-center gap-3">
-        <button onClick={onMenuToggle} className="lg:hidden p-2 rounded-lg hover:bg-accent">
+        <button onClick={onMenuToggle} className="lg:hidden p-2 rounded-lg active:bg-accent">
           <Menu className="w-5 h-5" />
         </button>
         <div className={cn(
@@ -61,7 +61,7 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
       <div className="flex items-center gap-1">
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+          className="p-2 rounded-lg active:bg-accent text-muted-foreground active:text-foreground transition-colors"
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
@@ -69,14 +69,14 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="relative p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+            <button className="relative p-2 rounded-lg active:bg-accent text-muted-foreground active:text-foreground transition-colors">
               <Bell className="w-[18px] h-[18px]" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80 p-0">
             <DropdownMenuItem asChild>
-              <Link to="/trips" className="px-3 py-2 font-semibold text-sm border-b border-border block cursor-pointer hover:bg-accent/50">
+              <Link to="/trips" className="px-3 py-2 font-semibold text-sm border-b border-border block cursor-pointer active:bg-accent/50">
                 Fleet Status
               </Link>
             </DropdownMenuItem>
@@ -86,7 +86,7 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-accent transition-colors ml-1">
+            <button className="flex items-center gap-2 p-1.5 rounded-lg active:bg-accent transition-colors ml-1">
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <span className="text-sm font-semibold text-primary">
                   {user?.full_name?.charAt(0) || 'U'}

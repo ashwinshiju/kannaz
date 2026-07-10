@@ -1,10 +1,12 @@
 import React from 'react';
+import useModalHistory from '@/hooks/useModalHistory';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from '@/components/ui/alert-dialog';
 
 export default function ConfirmDialog({ open, onClose, onConfirm, title, description, loading }) {
+  useModalHistory(open, onClose, 'confirm');
   return (
     <AlertDialog open={open} onOpenChange={onClose}>
       <AlertDialogContent>

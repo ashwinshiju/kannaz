@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EmptyState from '@/components/shared/EmptyState';
+import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 export default function DataTable({
@@ -21,7 +22,25 @@ export default function DataTable({
   emptyActionLabel,
 }) {
   const [search, setSearch] = useState('');
-  const [filterValues, setFilterValues] = useState({});
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filterValues = useMemo(() => {
+    const vals = {};
+    filters.forEach(f => {
+      const v = searchParams.get(`filter.${f.key}`);
+      if (v) vals[f.key] = v;
+    });
+    return vals;
+  }, [searchParams, filters]);
+  const handleFilterChange = (key, value) => {
+    const next = new URLSearchParams(searchParams);
+    if (value && value !== '_all') {
+      next.set(`filter.${key}`, value);
+    } else {
+      next.delete(`filter.${key}`);
+    }
+    setSearchParams(next);
+    setPage(0);
+  };
   const [page, setPage] = useState(0);
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
@@ -85,7 +104,7 @@ export default function DataTable({
           <Select
             key={filter.key}
             value={filterValues[filter.key] || '_all'}
-            onValueChange={v => { setFilterValues(prev => ({ ...prev, [filter.key]: v })); setPage(0); }}
+            onValueChange={v => handleFilterChange(filter.key, v)}
           >
             <SelectTrigger className="w-[160px] h-9">
               <SelectValue placeholder={filter.label} />
@@ -116,7 +135,7 @@ export default function DataTable({
                 {columns.map(col => (
                   <th
                     key={col.key}
-                    className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:text-foreground transition-colors"
+                    className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap cursor-pointer select-none active:text-foreground transition-colors"
                     onClick={() => col.sortable !== false && handleSort(col.key)}
                   >
                     <span className="inline-flex items-center gap-1">
@@ -137,7 +156,7 @@ export default function DataTable({
             </thead>
             <tbody className="divide-y divide-border">
               {paged.map((row, i) => (
-                <tr key={row.id || i} className="hover:bg-muted/30 transition-colors">
+                <tr key={row.id || i} className="active:bg-muted/30 transition-colors">
                   {columns.map(col => (
                     <td key={col.key} className="px-4 py-3 whitespace-nowrap">
                       {col.render ? col.render(row[col.key], row) : (row[col.key] ?? '—')}
@@ -157,7 +176,7 @@ export default function DataTable({
                           </Button>
                         )}
                         {onDelete && (
-                          <Button variant="ghost" size="sm" onClick={() => onDelete(row)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                          <Button variant="ghost" size="sm" onClick={() => onDelete(row)} className="h-8 w-8 p-0 text-destructive active:text-destructive">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         )}

@@ -1,4 +1,5 @@
 import React from 'react';
+import useModalHistory from '@/hooks/useModalHistory';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from '@/components/ui/dialog';
@@ -9,6 +10,7 @@ import MobileSelect from '@/components/shared/MobileSelect';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function FormModal({ open, onClose, title, fields = [], values, onChange, onSubmit, loading }) {
+  useModalHistory(open, () => onClose(false), 'form');
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit();
