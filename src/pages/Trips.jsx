@@ -150,7 +150,7 @@ export default function Trips() {
   const acknowledgeTrip = (trip) => updateTripStatus(trip, { status: 'acknowledged', acknowledged_at: new Date().toISOString() }, 'Trip acknowledged');
 
   const columns = [
-    { key: 'trip_number', label: 'Trip #', render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
+    { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
     { key: 'employee_name', label: 'Employee', render: (val) => <span className="font-medium">{val}</span> },
     { key: 'vehicle_name', label: 'Vehicle' },
     {
@@ -180,7 +180,7 @@ export default function Trips() {
       }
     },
     { key: 'purpose', label: 'Purpose', render: (val) => <span className="capitalize">{val || '—'}</span> },
-    { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
+    { key: 'trip_number', label: 'Trip #', render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
     { key: 'created_date', label: 'Date', render: (val) => val ? moment.utc(val).utcOffset(240).format('MMM DD, HH:mm') : '—' },
     {
       key: 'id', label: '', sortable: false,
