@@ -18,7 +18,7 @@ export default function MobileBottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-card border-t border-border flex items-center justify-around px-1"
+      className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-card border-t border-border flex items-center justify-around px-1 safe-bottom"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: 'auto' }}
     >
       {tabs.map(tab => {
@@ -31,9 +31,11 @@ export default function MobileBottomNav() {
             key={tab.path}
             to={targetPath}
             className={cn(
-              "flex flex-col items-center gap-1 py-2 px-2 min-w-[56px] transition-colors",
+              "flex flex-col items-center gap-1 py-2 px-2 min-w-[56px] min-h-[44px] justify-center transition-colors",
               isActive ? "text-primary" : "text-muted-foreground"
             )}
+            aria-label={tab.label}
+            aria-current={isActive ? 'page' : undefined}
           >
             <tab.icon className="w-5 h-5 shrink-0" />
             <span className="text-[10px] font-medium leading-none">{tab.label}</span>

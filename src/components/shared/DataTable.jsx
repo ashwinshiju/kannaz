@@ -166,17 +166,17 @@ export default function DataTable({
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {onView && (
-                          <Button variant="ghost" size="sm" onClick={() => onView(row)} className="h-8 w-8 p-0">
+                          <Button variant="ghost" size="sm" onClick={() => onView(row)} aria-label="View" className="h-11 w-11 md:h-8 md:w-8 p-0">
                             <Eye className="w-4 h-4" />
                           </Button>
                         )}
                         {onEdit && (
-                          <Button variant="ghost" size="sm" onClick={() => onEdit(row)} className="h-8 w-8 p-0">
+                          <Button variant="ghost" size="sm" onClick={() => onEdit(row)} aria-label="Edit" className="h-11 w-11 md:h-8 md:w-8 p-0">
                             <Edit className="w-4 h-4" />
                           </Button>
                         )}
                         {onDelete && (
-                          <Button variant="ghost" size="sm" onClick={() => onDelete(row)} className="h-8 w-8 p-0 text-destructive active:text-destructive">
+                          <Button variant="ghost" size="sm" onClick={() => onDelete(row)} aria-label="Delete" className="h-11 w-11 md:h-8 md:w-8 p-0 text-destructive active:text-destructive">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         )}
@@ -207,13 +207,13 @@ export default function DataTable({
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)} className="h-8 w-8 p-0">
+            <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)} aria-label="Previous page" className="h-11 w-11 md:h-8 md:w-8 p-0">
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <span className="text-sm font-medium min-w-[60px] text-center">
               {page + 1} / {totalPages || 1}
             </span>
-            <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)} className="h-8 w-8 p-0">
+            <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)} aria-label="Next page" className="h-11 w-11 md:h-8 md:w-8 p-0">
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>

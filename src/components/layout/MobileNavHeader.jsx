@@ -2,6 +2,12 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 
+const coreTabRoutes = [
+  '/', '/trips', '/vehicles', '/live-map', '/settings',
+  '/employees', '/departments', '/fuel', '/maintenance',
+  '/documents', '/reports', '/audit-log', '/permissions', '/locations',
+];
+
 const childRoutes = [
   { pattern: /^\/vehicles\/[^/]+$/, title: 'Vehicle Profile', back: '/vehicles' },
   { pattern: /^\/trips\/new$/, title: 'Start a Trip', back: '/trips' },
@@ -21,8 +27,9 @@ export default function MobileNavHeader() {
   const navigate = useNavigate();
   const pathname = location.pathname;
 
-  const isChildRoute = childRoutes.some(r => r.pattern.test(pathname)) ||
-    pathname.split('/').filter(Boolean).length >= 2;
+  const isChildRoute = (childRoutes.some(r => r.pattern.test(pathname)) ||
+    pathname.split('/').filter(Boolean).length >= 2) &&
+    !coreTabRoutes.includes(pathname);
 
   if (!isChildRoute) return null;
 

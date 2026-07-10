@@ -32,13 +32,13 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
   return (
     <header
       className={cn(
-        "fixed top-0 right-0 z-30 h-[calc(4rem_+_env(safe-area-inset-top))] bg-card/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-4 lg:px-6 transition-all duration-300 left-0",
+        "fixed top-0 right-0 z-30 h-[calc(4rem_+_env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] bg-card/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-4 lg:px-6 transition-all duration-300 left-0",
         sidebarCollapsed ? "lg:left-[68px]" : "lg:left-[250px]"
       )}
     >
       {/* Left: Mobile menu + Search */}
       <div className="flex items-center gap-3">
-        <button onClick={onMenuToggle} className="lg:hidden p-2 rounded-lg active:bg-accent">
+        <button onClick={onMenuToggle} className="lg:hidden p-2 rounded-lg active:bg-accent min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Open menu">
           <Menu className="w-5 h-5" />
         </button>
         <div className={cn(
@@ -61,7 +61,7 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
       <div className="flex items-center gap-1">
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg active:bg-accent text-muted-foreground active:text-foreground transition-colors"
+          className="p-2 rounded-lg active:bg-accent text-muted-foreground active:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
@@ -69,7 +69,7 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="relative p-2 rounded-lg active:bg-accent text-muted-foreground active:text-foreground transition-colors">
+            <button className="relative p-2 rounded-lg active:bg-accent text-muted-foreground active:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Notifications">
               <Bell className="w-[18px] h-[18px]" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
             </button>
@@ -86,7 +86,7 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 p-1.5 rounded-lg active:bg-accent transition-colors ml-1">
+            <button className="flex items-center gap-2 p-1.5 rounded-lg active:bg-accent transition-colors ml-1 min-h-[44px] flex items-center justify-center" aria-label="User menu">
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <span className="text-sm font-semibold text-primary">
                   {user?.full_name?.charAt(0) || 'U'}
