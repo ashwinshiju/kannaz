@@ -12,10 +12,19 @@ import { calculateDistance } from '@/services/GPSService';
 export const TRACKING_INTERVAL_MS = 15_000;
 
 /** A gap is flagged when the time between consecutive points exceeds this multiplier × expected interval. */
-const GAP_THRESHOLD_MULTIPLIER = 2.5;
+const GAP_THRESHOLD_MULTIPLIER = 3.5;
 
 /** Percentage difference threshold for flagging a distance mismatch. */
-const MISMATCH_THRESHOLD_PCT = 10;
+const MISMATCH_THRESHOLD_PCT = 20;
+
+/** Segments shorter than this (meters) are treated as stationary — GPS shimmer is skipped. */
+const STATIONARY_THRESHOLD_M = 5;
+
+/** Gaps longer than this (ms) with no speed data are flagged as incomplete. Shorter gaps use straight-line Haversine. */
+const GAP_INCOMPLETE_THRESHOLD_MS = 300_000; // 5 minutes
+
+/** EMA smoothing factor — 0.7 = 70% weight to new point, 30% to history. Reduces GPS shimmer at low speeds. */
+const EMA_ALPHA = 0.7;
 
 /**
  * Detect tracking gaps in a time-ordered series of GPS points.
@@ -88,18 +97,45 @@ function getSpeedKmh(point) {
  * @param {number} expectedIntervalMs
  * @returns {{ trackedDistanceKm: number, gapDetails: Array, hasIncompleteGaps: boolean }}
  */
+/**
+ * Apply exponential moving average (EMA) smoothing to a series of GPS points.
+ * Dampens the coordinate oscillation ("shimmer") that occurs when the vehicle
+ * is stationary or moving at low speeds — a major cause of GPS distance
+ * inflation versus the odometer.
+ *
+ * Each smoothed coordinate = prev×(1-α) + curr×α, where α = EMA_ALPHA.
+ */
+function smoothPoints(points) {
+  if (points.length < 2) return points;
+  const smoothed = [{ ...points[0] }];
+  for (let i = 1; i < points.length; i++) {
+    const prev = smoothed[i - 1];
+    const curr = points[i];
+    smoothed.push({
+      ...curr,
+      latitude: prev.latitude * (1 - EMA_ALPHA) + curr.latitude * EMA_ALPHA,
+      longitude: prev.longitude * (1 - EMA_ALPHA) + curr.longitude * EMA_ALPHA,
+    });
+  }
+  return smoothed;
+}
+
 export function calculateGapAwareDistance(points, gaps, expectedIntervalMs = TRACKING_INTERVAL_MS) {
   if (!points || points.length < 2) {
     return { trackedDistanceKm: 0, gapDetails: [], hasIncompleteGaps: false };
   }
 
+  // Apply EMA smoothing to reduce GPS shimmer — especially the oscillation
+  // that occurs when the vehicle is stationary or moving at low speeds.
+  const smoothed = smoothPoints(points);
+
   let totalMeters = 0;
   const gapDetails = [];
   let hasIncompleteGaps = false;
 
-  for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1];
-    const curr = points[i];
+  for (let i = 1; i < smoothed.length; i++) {
+    const prev = smoothed[i - 1];
+    const curr = smoothed[i];
     const gap = gaps.find((g) => g.startIndex === i - 1);
 
     if (gap) {
@@ -123,25 +159,42 @@ export function calculateGapAwareDistance(points, gaps, expectedIntervalMs = TRA
           method: 'speed_interpolation',
         });
       } else {
-        // No speed data — exclude from tracked distance
-        hasIncompleteGaps = true;
+        // No speed data — use straight-line Haversine between gap endpoints
+        // rather than excluding entirely. Only flag as incomplete for very
+        // large gaps (>5 min) where straight-line would be too inaccurate.
+        const haversineM = calculateDistance(
+          prev.latitude, prev.longitude,
+          curr.latitude, curr.longitude
+        );
+        const estimatedKm = Math.round((haversineM / 1000) * 100) / 100;
+        totalMeters += haversineM;
+
+        if (gap.durationMs > GAP_INCOMPLETE_THRESHOLD_MS) {
+          hasIncompleteGaps = true;
+        }
+
         gapDetails.push({
           startTime: gap.startTime,
           endTime: gap.endTime,
           durationMs: gap.durationMs,
           durationMin: gap.durationMin,
-          estimated: false,
-          method: 'excluded',
+          estimated: true,
+          estimatedDistanceKm: estimatedKm,
+          method: gap.durationMs > GAP_INCOMPLETE_THRESHOLD_MS ? 'excluded_large_gap' : 'straight_line',
         });
       }
     } else {
-      // Continuous segment — Haversine
-      totalMeters += calculateDistance(
-        prev.latitude,
-        prev.longitude,
-        curr.latitude,
-        curr.longitude
+      // Continuous segment — Haversine with stationary dedup
+      const segmentM = calculateDistance(
+        prev.latitude, prev.longitude,
+        curr.latitude, curr.longitude
       );
+
+      // Skip near-zero segments — vehicle is stationary (traffic light,
+      // parking). This prevents GPS shimmer from inflating distance.
+      if (segmentM < STATIONARY_THRESHOLD_M) continue;
+
+      totalMeters += segmentM;
     }
   }
 

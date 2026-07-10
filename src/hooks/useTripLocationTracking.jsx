@@ -21,7 +21,7 @@ import { validateGeoPoint } from '@/services/GPSService';
 import { base44 } from '@/api/base44Client';
 import { TRACKING_INTERVAL_MS } from '@/services/trackingGapAnalysis';
 
-const TRACKING_TRUST_THRESHOLD = 50;
+const TRACKING_TRUST_THRESHOLD = 30;
 const HIGH_SPEED_INTERVAL_MS = 10_000; // 10s when speed > 60 km/h
 const STATIONARY_INTERVAL_MS = 25_000;  // 25s when speed < 10 km/h
 const HIGH_SPEED_THRESHOLD = 60;       // km/h
