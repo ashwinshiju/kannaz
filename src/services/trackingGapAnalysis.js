@@ -12,7 +12,7 @@ import { calculateDistance } from '@/services/GPSService';
 export const TRACKING_INTERVAL_MS = 15_000;
 
 /** A gap is flagged when the time between consecutive points exceeds this multiplier × expected interval. */
-const GAP_THRESHOLD_MULTIPLIER = 3.5;
+const GAP_THRESHOLD_MULTIPLIER = 10;
 
 /** Percentage difference threshold for flagging a distance mismatch. */
 const MISMATCH_THRESHOLD_PCT = 20;
@@ -23,8 +23,12 @@ const STATIONARY_THRESHOLD_M = 5;
 /** Gaps longer than this (ms) with no speed data are flagged as incomplete. Shorter gaps use straight-line Haversine. */
 const GAP_INCOMPLETE_THRESHOLD_MS = 300_000; // 5 minutes
 
-/** EMA smoothing factor — 0.7 = 70% weight to new point, 30% to history. Reduces GPS shimmer at low speeds. */
-const EMA_ALPHA = 0.7;
+/**
+ * EMA smoothing factor for GPS coordinate smoothing.
+ * Used ONLY for display/map-rendering — NOT for distance calculation.
+ * Distance uses raw coordinates to preserve turn/curve distance.
+ */
+export const EMA_ALPHA = 0.7;
 
 /**
  * Detect tracking gaps in a time-ordered series of GPS points.
@@ -105,7 +109,7 @@ function getSpeedKmh(point) {
  *
  * Each smoothed coordinate = prev×(1-α) + curr×α, where α = EMA_ALPHA.
  */
-function smoothPoints(points) {
+export function smoothPoints(points) {
   if (points.length < 2) return points;
   const smoothed = [{ ...points[0] }];
   for (let i = 1; i < points.length; i++) {
@@ -125,17 +129,16 @@ export function calculateGapAwareDistance(points, gaps, expectedIntervalMs = TRA
     return { trackedDistanceKm: 0, gapDetails: [], hasIncompleteGaps: false };
   }
 
-  // Apply EMA smoothing to reduce GPS shimmer — especially the oscillation
-  // that occurs when the vehicle is stationary or moving at low speeds.
-  const smoothed = smoothPoints(points);
-
+  // Use raw coordinates for distance calculation — EMA smoothing was pulling
+  // points toward a straight line, under-counting distance on turns/curves.
+  // Smoothing is available via smoothPoints() for display/map-rendering only.
   let totalMeters = 0;
   const gapDetails = [];
   let hasIncompleteGaps = false;
 
-  for (let i = 1; i < smoothed.length; i++) {
-    const prev = smoothed[i - 1];
-    const curr = smoothed[i];
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
     const gap = gaps.find((g) => g.startIndex === i - 1);
 
     if (gap) {
