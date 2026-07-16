@@ -15,6 +15,7 @@ export default function DataTable({
   onEdit,
   onDelete,
   onView,
+  onRowClick,
   pageSize: defaultPageSize = 10,
   emptyTitle,
   emptyDescription,
@@ -156,14 +157,14 @@ export default function DataTable({
             </thead>
             <tbody className="divide-y divide-border">
               {paged.map((row, i) => (
-                <tr key={row.id || i} className="active:bg-muted/30 transition-colors">
+                <tr key={row.id || i} className={cn("active:bg-muted/30 transition-colors", onRowClick && "cursor-pointer")} onClick={onRowClick ? () => onRowClick(row) : undefined}>
                   {columns.map(col => (
                     <td key={col.key} className="px-4 py-3 whitespace-nowrap">
                       {col.render ? col.render(row[col.key], row) : (row[col.key] ?? '—')}
                     </td>
                   ))}
                   {hasActions && (
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1 md:gap-1 gap-y-2 flex-wrap justify-end">
                         {onView && (
                           <Button variant="ghost" size="sm" onClick={() => onView(row)} aria-label="View" className="h-11 w-11 md:h-8 md:w-8 p-0">

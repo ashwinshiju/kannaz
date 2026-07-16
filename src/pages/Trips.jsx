@@ -236,6 +236,11 @@ export default function Trips() {
         />
         <DataTable
           data={data} columns={columns} searchPlaceholder="Search trips..."
+          onRowClick={(row) => {
+            if (row.status === 'completed') {
+              navigate(`/live-map?trip=${row.id}`);
+            }
+          }}
           filters={[
             { key: 'status', label: 'Status', options: [
               { value: 'created', label: 'Created' }, { value: 'in_progress', label: 'In Progress' },

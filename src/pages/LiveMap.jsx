@@ -1,14 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Route, Gauge, MapPin, Clock, AlertTriangle, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import { cn } from '@/lib/utils';
 import moment from 'moment';
 
 export default function LiveMap() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const highlightTripId = searchParams.get('trip');
   const [vehicleFilter, setVehicleFilter] = useState('all');
+  const highlightRef = useRef(null);
 
   const { data: trips = [], isLoading } = useQuery({
     queryKey: ['trips', 'completed'],
@@ -22,6 +27,31 @@ export default function LiveMap() {
     queryKey: ['vehicles'],
     queryFn: () => base44.entities.Vehicle.list(),
   });
+
+  // If a trip is highlighted via URL param but a vehicle filter would hide it,
+  // reset to "all" so the highlighted trip is visible.
+  useEffect(() => {
+    if (highlightTripId && vehicleFilter !== 'all') {
+      const trip = trips.find((t) => t.id === highlightTripId);
+      if (trip && trip.vehicle_id !== vehicleFilter) {
+        setVehicleFilter('all');
+      }
+    }
+  }, [highlightTripId, vehicleFilter, trips]);
+
+  // Scroll the highlighted trip card into view once loaded.
+  useEffect(() => {
+    if (highlightTripId && highlightRef.current && !isLoading) {
+      highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightTripId, isLoading]);
+
+  const clearHighlight = () => {
+    if (highlightTripId) {
+      searchParams.delete('trip');
+      setSearchParams(searchParams);
+    }
+  };
 
   const filtered = useMemo(
     () =>
@@ -123,7 +153,18 @@ export default function LiveMap() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((trip) => (
-            <div key={trip.id} className="rounded-lg border border-border bg-card p-4 space-y-3">
+            <div
+              key={trip.id}
+              ref={trip.id === highlightTripId ? highlightRef : undefined}
+              onClick={clearHighlight}
+              className={cn(
+                "rounded-lg border bg-card p-4 space-y-3 transition-all",
+                trip.id === highlightTripId
+                  ? "border-primary ring-2 ring-primary shadow-lg"
+                  : "border-border active:bg-muted/30 cursor-default",
+                trip.id === highlightTripId && "cursor-pointer"
+              )}
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
