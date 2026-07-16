@@ -6,6 +6,18 @@
       "type": "string",
       "title": "Preset Name"
     },
+    "category": {
+      "type": "string",
+      "enum": [
+        "office",
+        "warehouse",
+        "customer",
+        "public",
+        "other"
+      ],
+      "default": "office",
+      "title": "Category"
+    },
     "latitude": {
       "type": "number",
       "title": "Latitude"
