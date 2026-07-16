@@ -23,7 +23,13 @@ export default function PresetFormModal({ open, onClose, editing, form, onChange
       setGpsCapturing(false);
       setGpsWarning(null);
       setGpsMetadata(null);
+      // Auto-capture GPS when creating a new preset (not when editing an
+      // existing one with coordinates already set).
+      if (!editing) {
+        handleCaptureGPS();
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editing?.id]);
 
   const handleCaptureGPS = async () => {

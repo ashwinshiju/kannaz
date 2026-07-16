@@ -130,6 +130,13 @@ export default function StartTrip() {
     setOdometerManuallyEntered(true);
   };
 
+  // Auto-capture GPS on mount so the user doesn't need to click a button.
+  // The "Capture GPS" button remains available for manual re-capture.
+  useEffect(() => {
+    handleCaptureGPS();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCaptureGPS = async () => {
     setGpsCapturing(true);
     setGpsWarning(null);
@@ -374,7 +381,7 @@ export default function StartTrip() {
                 ) : (
                   <MapPin className="w-4 h-4" />
                 )}
-                {gpsCapturing ? 'Capturing...' : 'Capture GPS'}
+                {gpsCapturing ? 'Capturing...' : 'Re-capture'}
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-4">
