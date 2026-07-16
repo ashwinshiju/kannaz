@@ -178,14 +178,6 @@ export default function LiveMap() {
                 {trip.completed_at
                   ? moment(trip.completed_at).format('MMM DD, YYYY · HH:mm')
                   : '—'}
-                {trip.duration_minutes != null && trip.duration_minutes > 0 && (
-                  <span className="ml-1.5 inline-flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {trip.duration_minutes >= 60
-                      ? `${Math.floor(trip.duration_minutes / 60)}h ${trip.duration_minutes % 60}m`
-                      : `${trip.duration_minutes}m`}
-                  </span>
-                )}
               </p>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex items-center gap-1.5">
