@@ -11,6 +11,7 @@ import ChartCard from '@/components/shared/ChartCard';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
+import EndTripDialog from '@/components/trips/EndTripDialog';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [endTripOpen, setEndTripOpen] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -77,13 +79,13 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">Fleet operations overview</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <Button asChild size="sm">
-            <Link to="/trips/new"><Plus className="w-4 h-4 mr-1" /> Start a Trip</Link>
+            <Link to="/trips/new"><Plus className="w-4 h-4 md:mr-1" /><span className="hidden md:inline">Start a Trip</span></Link>
           </Button>
           {activeUserTrip && (
-            <Button asChild variant="destructive" size="sm">
-              <Link to="/trips"><StopCircle className="w-4 h-4 mr-1" /> End Trip</Link>
+            <Button variant="destructive" size="sm" onClick={() => setEndTripOpen(true)}>
+              <StopCircle className="w-4 h-4 md:mr-1" /><span className="hidden md:inline">End Trip</span>
             </Button>
           )}
         </div>
@@ -212,6 +214,18 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* End Trip dialog — opens directly from the dashboard */}
+      {activeUserTrip && (
+        <EndTripDialog
+          trip={activeUserTrip}
+          open={endTripOpen}
+          onClose={(v) => {
+            setEndTripOpen(v);
+            if (!v) loadStats();
+          }}
+        />
+      )}
     </div>
   );
 }
