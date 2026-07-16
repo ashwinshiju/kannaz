@@ -8,6 +8,7 @@ import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
 
 const CATEGORY_STYLES = {
+  site: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
   office: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
   warehouse: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
   customer: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
@@ -28,7 +29,7 @@ function CategoryBadge({ value }) {
 const PRESET_FIELDS = [
   { key: 'name', label: 'Preset Name', required: true, placeholder: 'e.g. Head Office, Warehouse - Al Quoz' },
   { key: 'category', label: 'Category', type: 'select', required: true, options: [
-    { value: 'office', label: 'Office' }, { value: 'warehouse', label: 'Warehouse' },
+    { value: 'site', label: 'Site' }, { value: 'office', label: 'Office' }, { value: 'warehouse', label: 'Warehouse' },
     { value: 'customer', label: 'Customer' }, { value: 'public', label: 'Public' }, { value: 'other', label: 'Other' },
   ]},
   { key: 'latitude', label: 'Latitude', type: 'number', required: true, placeholder: '24.4854' },
@@ -171,7 +172,7 @@ export default function LocationPresetManager() {
           searchPlaceholder="Search presets..."
           filters={[
             { key: 'category', label: 'Category', options: [
-              { value: 'office', label: 'Office' }, { value: 'warehouse', label: 'Warehouse' },
+              { value: 'site', label: 'Site' }, { value: 'office', label: 'Office' }, { value: 'warehouse', label: 'Warehouse' },
               { value: 'customer', label: 'Customer' }, { value: 'public', label: 'Public' }, { value: 'other', label: 'Other' },
             ]},
           ]}

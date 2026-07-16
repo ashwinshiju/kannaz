@@ -9,6 +9,7 @@
     "category": {
       "type": "string",
       "enum": [
+        "site",
         "office",
         "warehouse",
         "customer",
