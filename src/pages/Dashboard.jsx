@@ -25,7 +25,7 @@ export default function Dashboard() {
   }, []);
 
   const loadStats = async () => {
-    const [employees, vehicles, locations, trips, fuel, maintenance, docs] = await Promise.all([
+    const [employees, vehicles, locations, trips, fuel, maintenance, docs, presets] = await Promise.all([
       base44.entities.Employee.list().catch(() => []),
       base44.entities.Vehicle.list().catch(() => []),
       base44.entities.Location.list().catch(() => []),
@@ -33,8 +33,9 @@ export default function Dashboard() {
       base44.entities.FuelRecord.list().catch(() => []),
       base44.entities.Maintenance.list().catch(() => []),
       base44.entities.Document.list().catch(() => []),
+      base44.entities.LocationPreset.list().catch(() => []),
     ]);
-    setStats({ employees, vehicles, locations, trips, fuel, maintenance, docs });
+    setStats({ employees, vehicles, locations, trips, fuel, maintenance, docs, presets });
     setLoading(false);
   };
 
@@ -63,6 +64,7 @@ export default function Dashboard() {
   })).filter(d => d.value > 0);
 
   const recentTrips = [...s.trips].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 5);
+  const presetMap = new Map((s.presets || []).map(p => [p.id, p]));
   const activeUserTrip = currentUser
     ? s.trips.find((t) => t.status === 'in_progress' && t.employee_id === currentUser.id)
     : null;
@@ -172,7 +174,15 @@ export default function Dashboard() {
                     <Route className="w-4 h-4 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{trip.start_location} → {trip.end_location}</p>
+                    <p className="text-sm font-medium truncate">
+                      {(() => {
+                        const sp = trip.start_location_preset_id ? presetMap.get(trip.start_location_preset_id) : null;
+                        const ep = trip.end_location_preset_id ? presetMap.get(trip.end_location_preset_id) : null;
+                        const from = sp ? sp.name : (trip.start_location || '—');
+                        const to = ep ? ep.name : (trip.end_location || '—');
+                        return `${from} → ${to}`;
+                      })()}
+                    </p>
                     <p className="text-xs text-muted-foreground">{trip.employee_name} • {trip.vehicle_name}</p>
                   </div>
                 </div>
