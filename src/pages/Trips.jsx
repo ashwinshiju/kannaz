@@ -212,7 +212,7 @@ export default function Trips() {
               <Play className="w-3 h-3" /> Start
             </Button>
           )}
-          {row.status === 'in_progress' && row.id !== activeTrip?.id && (
+          {row.status === 'in_progress' && (
             <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setEndTripDialog(row); }} className="h-7 text-xs gap-1">
               <CheckCircle2 className="w-3 h-3" /> End Trip
             </Button>

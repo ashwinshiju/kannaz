@@ -80,12 +80,13 @@ export default function Dashboard() {
           <p className="text-sm text-muted-foreground mt-1">Fleet operations overview</p>
         </div>
         <div className="flex gap-2 shrink-0">
-          <Button asChild size="sm">
-            <Link to="/trips/new"><Plus className="w-4 h-4 md:mr-1" /><span className="hidden md:inline">Start a Trip</span></Link>
-          </Button>
-          {activeUserTrip && (
+          {activeUserTrip ? (
             <Button variant="destructive" size="sm" onClick={() => setEndTripOpen(true)}>
               <StopCircle className="w-4 h-4 md:mr-1" /><span className="hidden md:inline">End Trip</span>
+            </Button>
+          ) : (
+            <Button asChild size="sm">
+              <Link to="/trips/new"><Plus className="w-4 h-4 md:mr-1" /><span className="hidden md:inline">Start a Trip</span></Link>
             </Button>
           )}
         </div>
