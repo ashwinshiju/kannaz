@@ -8,7 +8,6 @@ import { ChevronLeft, MapPin, Loader2, AlertTriangle, Car, Pencil } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import MobileSelect from '@/components/shared/MobileSelect';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -53,7 +52,6 @@ export default function StartTrip() {
   const [odometerManuallyEntered, setOdometerManuallyEntered] = useState(false);
   const [startLat, setStartLat] = useState('');
   const [startLng, setStartLng] = useState('');
-  const [notes, setNotes] = useState('');
   const [gpsMetadata, setGpsMetadata] = useState(null);
   const [gpsWarning, setGpsWarning] = useState(null);
   const [gpsCapturing, setGpsCapturing] = useState(false);
@@ -227,7 +225,6 @@ export default function StartTrip() {
         start_odometer: startOdometer ? parseFloat(startOdometer) : null,
         odometer_manually_entered: odometerManuallyEntered,
         started_at: now,
-        notes: notes || '',
       };
 
       // Create the trip with the vehicle's record ID as a foreign-key reference.
@@ -400,18 +397,6 @@ export default function StartTrip() {
                 Trust score: {gpsMetadata.trustScore}/100 · Accuracy: {gpsMetadata.accuracy != null ? `${Math.round(gpsMetadata.accuracy)}m` : '—'}
               </p>
             )}
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <Label htmlFor="notes">Notes (optional)</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              rows={3}
-              placeholder="Additional trip notes..."
-            />
           </div>
 
           {/* Submit */}

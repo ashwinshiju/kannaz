@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import TripSummaryCard from '@/components/trips/TripSummaryCard';
 
@@ -26,6 +27,7 @@ export default function EndTripDialog({ trip, open, onClose }) {
   const [gpsCapturing, setGpsCapturing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [odometerError, setOdometerError] = useState(null);
+  const [notes, setNotes] = useState('');
 
   // Reset all state when the dialog opens for a new trip.
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function EndTripDialog({ trip, open, onClose }) {
       setGpsCapturing(false);
       setSubmitting(false);
       setOdometerError(null);
+      setNotes('');
     }
   }, [open, trip?.id]);
 
@@ -251,6 +254,7 @@ export default function EndTripDialog({ trip, open, onClose }) {
         discarded_low_trust_count: discardedLowTrustCount,
         discarded_spoofed_count: discardedSpoofedCount,
         distance_mismatch: mismatchResult.mismatch,
+        notes: notes || '',
       };
 
       await base44.entities.Trip.update(trip.id, updates);
@@ -371,6 +375,18 @@ export default function EndTripDialog({ trip, open, onClose }) {
                 Trust score: {gpsMetadata.trustScore}/100 · Accuracy: {gpsMetadata.accuracy != null ? `${Math.round(gpsMetadata.accuracy)}m` : '—'}
               </p>
             )}
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-1.5">
+            <Label htmlFor="end_notes">Additional trip notes</Label>
+            <Textarea
+              id="end_notes"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Any additional notes about this trip..."
+            />
           </div>
 
           {/* Live summary card — shows calculated distance once end odometer is entered */}
