@@ -1,23 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { MapPin, Plus } from 'lucide-react';
-import PageHeader from '@/components/shared/PageHeader';
+import { Plus } from 'lucide-react';
 import DataTable from '@/components/shared/DataTable';
-import FormModal from '@/components/shared/FormModal';
+import PresetFormDialog from '@/components/locations/PresetFormDialog';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
 
-const PRESET_FIELDS = [
-  { key: 'name', label: 'Preset Name', required: true, placeholder: 'e.g. Head Office, Warehouse - Al Quoz' },
-  { key: 'latitude', label: 'Latitude', type: 'number', required: true, placeholder: '24.4854' },
-  { key: 'longitude', label: 'Longitude', type: 'number', required: true, placeholder: '54.3650' },
-  { key: 'radius', label: 'Radius (meters)', type: 'number', placeholder: '100' },
-  { key: 'description', label: 'Description', type: 'textarea' },
+const CATEGORY_STYLES = {
+  office: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  warehouse: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  site: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
+  customer: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+  public: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  other: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+};
+
+const CATEGORY_OPTIONS = [
+  { value: 'office', label: 'Office' },
+  { value: 'warehouse', label: 'Warehouse' },
+  { value: 'site', label: 'Site' },
+  { value: 'customer', label: 'Customer' },
+  { value: 'public', label: 'Public' },
+  { value: 'other', label: 'Other' },
 ];
+
+function CategoryBadge({ value }) {
+  const style = CATEGORY_STYLES[value] || CATEGORY_STYLES.other;
+  const label = (value || 'other').replace(/_/g, ' ');
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize whitespace-nowrap ${style}`}>
+      {label}
+    </span>
+  );
+}
 
 const PRESET_COLUMNS = [
   { key: 'name', label: 'Name', render: (val) => <span className="font-medium">{val}</span> },
+  { key: 'category', label: 'Category', render: (val) => <CategoryBadge value={val} /> },
   {
     key: 'coordinates', label: 'Coordinates', sortable: false,
     render: (_, row) => (
@@ -65,7 +85,7 @@ export default function LocationPresetManager() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ radius: 100 });
+    setForm({ radius: 100, category: 'office' });
     setModalOpen(true);
   };
 
@@ -126,13 +146,20 @@ export default function LocationPresetManager() {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Location Presets"
-        subtitle={`${data.length} presets — matched on trip start/end for friendly location names`}
-        action={openCreate}
-        actionLabel="Add Preset"
-        actionIcon={Plus}
-      />
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-heading font-semibold">Search Presets</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Define named geographic zones — when a trip starts or ends within a preset's radius, its friendly name is shown instead of raw coordinates.
+          </p>
+        </div>
+        <button
+          onClick={openCreate}
+          className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow hover:bg-primary/90 transition-colors shrink-0"
+        >
+          <Plus className="w-4 h-4" /> Add Preset
+        </button>
+      </div>
       {loading ? (
         <TableSkeleton />
       ) : (
@@ -140,6 +167,9 @@ export default function LocationPresetManager() {
           data={data}
           columns={PRESET_COLUMNS}
           searchPlaceholder="Search presets..."
+          filters={[
+            { key: 'category', label: 'Category', options: CATEGORY_OPTIONS },
+          ]}
           onEdit={openEdit}
           onDelete={setDeleteDialog}
           emptyTitle="No location presets yet"
@@ -148,11 +178,10 @@ export default function LocationPresetManager() {
           emptyActionLabel="Add Preset"
         />
       )}
-      <FormModal
+      <PresetFormDialog
         open={modalOpen}
         onClose={setModalOpen}
         title={editing ? 'Edit Preset' : 'Add Preset'}
-        fields={PRESET_FIELDS}
         values={form}
         onChange={(k, v) => setForm((p) => ({ ...p, [k]: v }))}
         onSubmit={handleSave}
