@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import {
   BarChart3, Download, Filter, ChevronDown, Route, Car, Users, Building2, MapPin
@@ -18,10 +17,6 @@ import CompletedTripsList from '@/components/reports/CompletedTripsList';
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function Reports() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const highlightTripId = searchParams.get('highlightTrip');
-  const initialTab = searchParams.get('tab') || 'trips';
-  const [activeTab, setActiveTab] = useState(initialTab);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -107,7 +102,7 @@ export default function Reports() {
         <KPICard title="Maintenance Spend" value={`$${totalMaintCost.toFixed(0)}`} icon={BarChart3} />
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="trips">
         <TabsList>
           <TabsTrigger value="trips">Trip Reports</TabsTrigger>
           <TabsTrigger value="vehicles">Vehicle Reports</TabsTrigger>
@@ -147,7 +142,7 @@ export default function Reports() {
           </div>
           <div className="mt-4">
             <h3 className="text-lg font-semibold mb-3">Completed Trips</h3>
-            <CompletedTripsList trips={s.trips} highlightTripId={highlightTripId} onClearHighlight={() => { setSearchParams({}); setActiveTab('trips'); }} />
+            <CompletedTripsList trips={s.trips} />
           </div>
           </TabsContent>
 

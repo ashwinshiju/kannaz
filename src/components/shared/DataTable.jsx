@@ -15,7 +15,6 @@ export default function DataTable({
   onEdit,
   onDelete,
   onView,
-  onRowClick,
   pageSize: defaultPageSize = 10,
   emptyTitle,
   emptyDescription,
@@ -87,7 +86,6 @@ export default function DataTable({
   };
 
   const hasActions = onEdit || onDelete || onView;
-  const isClickable = typeof onRowClick === 'function';
 
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -158,11 +156,7 @@ export default function DataTable({
             </thead>
             <tbody className="divide-y divide-border">
               {paged.map((row, i) => (
-                <tr
-                  key={row.id || i}
-                  onClick={isClickable ? () => onRowClick(row) : undefined}
-                  className={cn("active:bg-muted/30 transition-colors", isClickable && "cursor-pointer hover:bg-muted/20")}
-                >
+                <tr key={row.id || i} className="active:bg-muted/30 transition-colors">
                   {columns.map(col => (
                     <td key={col.key} className="px-4 py-3 whitespace-nowrap">
                       {col.render ? col.render(row[col.key], row) : (row[col.key] ?? '—')}
@@ -172,17 +166,17 @@ export default function DataTable({
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1 md:gap-1 gap-y-2 flex-wrap justify-end">
                         {onView && (
-                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onView(row); }} aria-label="View" className="h-11 w-11 md:h-8 md:w-8 p-0">
+                          <Button variant="ghost" size="sm" onClick={() => onView(row)} aria-label="View" className="h-11 w-11 md:h-8 md:w-8 p-0">
                             <Eye className="w-4 h-4" />
                           </Button>
                         )}
                         {onEdit && (
-                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onEdit(row); }} aria-label="Edit" className="h-11 w-11 md:h-8 md:w-8 p-0">
+                          <Button variant="ghost" size="sm" onClick={() => onEdit(row)} aria-label="Edit" className="h-11 w-11 md:h-8 md:w-8 p-0">
                             <Edit className="w-4 h-4" />
                           </Button>
                         )}
                         {onDelete && (
-                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(row); }} aria-label="Delete" className="h-11 w-11 md:h-8 md:w-8 p-0 text-destructive active:text-destructive">
+                          <Button variant="ghost" size="sm" onClick={() => onDelete(row)} aria-label="Delete" className="h-11 w-11 md:h-8 md:w-8 p-0 text-destructive active:text-destructive">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         )}

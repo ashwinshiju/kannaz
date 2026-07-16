@@ -246,7 +246,6 @@ export default function Trips() {
             ]},
           ]}
           onEdit={openEdit} onDelete={setDeleteDialog}
-          onRowClick={(row) => navigate(`/reports?highlightTrip=${row.id}`)}
           emptyTitle="No trips yet" emptyDescription="Create your first trip" emptyAction={openCreate} emptyActionLabel="Create Trip"
         />
         <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Trip' : 'Create Trip'}
