@@ -51,7 +51,7 @@ export default function AppLayout() {
           "pt-[calc(4rem_+_env(safe-area-inset-top))] min-h-screen transition-all duration-300 pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0",
           collapsed ? "lg:ml-[68px]" : "lg:ml-[250px]"
         )}>
-          <div className="p-4 lg:p-6 my-4">
+          <div className="p-4 lg:p-6 my-24">
             <MobileNavHeader />
             <AnimatedOutlet />
           </div>
