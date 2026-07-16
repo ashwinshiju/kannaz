@@ -1,0 +1,41 @@
+{
+  "name": "LocationPreset",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Preset Name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "office",
+        "warehouse",
+        "public",
+        "customer",
+        "other"
+      ],
+      "default": "office",
+      "title": "Category"
+    },
+    "latitude": {
+      "type": "number",
+      "title": "Latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "title": "Longitude"
+    },
+    "radius": {
+      "type": "number",
+      "default": 100,
+      "title": "Radius (meters)"
+    }
+  },
+  "required": [
+    "name",
+    "category",
+    "latitude",
+    "longitude"
+  ]
+}

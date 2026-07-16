@@ -8,6 +8,7 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import PullToRefresh from '@/components/shared/PullToRefresh';
+import PresetsSection from '@/components/locations/PresetsSection';
 import { useToast } from '@/components/ui/use-toast';
 
 const fields = [
@@ -105,6 +106,9 @@ export default function Locations() {
     <div>
       <PullToRefresh onRefresh={load}>
       <PageHeader title="Locations" subtitle={`${data.length} locations`} action={openCreate} actionLabel="Add Location" actionIcon={MapPin} />
+      <div className="mb-8">
+        <PresetsSection />
+      </div>
       <DataTable
         data={data} columns={columns} searchPlaceholder="Search locations..."
         filters={[

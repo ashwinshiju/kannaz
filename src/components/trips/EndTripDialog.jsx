@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { GPSService, calculateDistance } from '@/services/GPSService';
 import { detectGaps, calculateGapAwareDistance, calculateDistanceMismatch, TRACKING_INTERVAL_MS } from '@/services/trackingGapAnalysis';
+import { findMatchingPreset } from '@/services/presetMatching';
 import { MapPin, Loader2, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ export default function EndTripDialog({ trip, open, onClose }) {
   const [submitting, setSubmitting] = useState(false);
   const [odometerError, setOdometerError] = useState(null);
   const [notes, setNotes] = useState('');
+  const [endPresetId, setEndPresetId] = useState(null);
 
   // Reset all state when the dialog opens for a new trip.
   useEffect(() => {
@@ -41,6 +43,7 @@ export default function EndTripDialog({ trip, open, onClose }) {
       setSubmitting(false);
       setOdometerError(null);
       setNotes('');
+      setEndPresetId(null);
     }
   }, [open, trip?.id]);
 
@@ -116,6 +119,10 @@ export default function EndTripDialog({ trip, open, onClose }) {
       if (point.isJump) reasons.push('GPS jump anomaly detected');
       setGpsWarning(`GPS reading flagged (trust score: ${point.trustScore}/100) — ${reasons.join('; ')}`);
     }
+
+    // Match captured coordinates against saved LocationPresets (Haversine).
+    const matchedPreset = await findMatchingPreset(point.lat, point.lng);
+    setEndPresetId(matchedPreset?.id || null);
 
     setGpsCapturing(false);
   };
@@ -255,6 +262,7 @@ export default function EndTripDialog({ trip, open, onClose }) {
         discarded_spoofed_count: discardedSpoofedCount,
         distance_mismatch: mismatchResult.mismatch,
         notes: notes || '',
+        end_location_preset_id: endPresetId || '',
       };
 
       await base44.entities.Trip.update(trip.id, updates);

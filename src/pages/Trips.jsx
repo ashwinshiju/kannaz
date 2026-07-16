@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTripLocationTracking } from '@/hooks/useTripLocationTracking';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -42,6 +42,16 @@ export default function Trips() {
     queryKey: QUERY_KEY,
     queryFn: () => base44.entities.Trip.list(),
   });
+
+  const { data: presets = [] } = useQuery({
+    queryKey: ['location-presets'],
+    queryFn: () => base44.entities.LocationPreset.list(),
+  });
+  const presetMap = useMemo(() => {
+    const m = new Map();
+    presets.forEach((p) => m.set(p.id, p));
+    return m;
+  }, [presets]);
 
   // If the current user already has an in-progress trip, the primary action
   // becomes "End Trip" instead of "Create Trip".
@@ -158,10 +168,11 @@ export default function Trips() {
       render: (_, row) => {
         if (row.start_lat == null || row.start_lng == null) return <span className="text-muted-foreground">—</span>;
         const url = `https://www.google.com/maps/search/?api=1&query=${row.start_lat},${row.start_lng}`;
+        const preset = row.start_location_preset_id ? presetMap.get(row.start_location_preset_id) : null;
         return (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+          <a href={url} target="_blank" rel="noopener noreferrer" title={`GPS: ${row.start_lat.toFixed(6)}, ${row.start_lng.toFixed(6)}`} className="inline-flex items-center gap-1 text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
             <MapPin className="w-3 h-3" />
-            <span className="font-mono text-xs">{row.start_lat.toFixed(4)}, {row.start_lng.toFixed(4)}</span>
+            {preset ? <span className="text-xs font-medium">{preset.name}</span> : <span className="font-mono text-xs">{row.start_lat.toFixed(4)}, {row.start_lng.toFixed(4)}</span>}
           </a>
         );
       }
@@ -171,10 +182,11 @@ export default function Trips() {
       render: (_, row) => {
         if (row.end_lat == null || row.end_lng == null) return <span className="text-muted-foreground">—</span>;
         const url = `https://www.google.com/maps/search/?api=1&query=${row.end_lat},${row.end_lng}`;
+        const preset = row.end_location_preset_id ? presetMap.get(row.end_location_preset_id) : null;
         return (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+          <a href={url} target="_blank" rel="noopener noreferrer" title={`GPS: ${row.end_lat.toFixed(6)}, ${row.end_lng.toFixed(6)}`} className="inline-flex items-center gap-1 text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
             <MapPin className="w-3 h-3" />
-            <span className="font-mono text-xs">{row.end_lat.toFixed(4)}, {row.end_lng.toFixed(4)}</span>
+            {preset ? <span className="text-xs font-medium">{preset.name}</span> : <span className="font-mono text-xs">{row.end_lat.toFixed(4)}, {row.end_lng.toFixed(4)}</span>}
           </a>
         );
       }

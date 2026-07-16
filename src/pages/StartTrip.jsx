@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { GPSService, GPS_DEFAULTS } from '@/services/GPSService';
+import { findMatchingPreset } from '@/services/presetMatching';
 import { ChevronLeft, MapPin, Loader2, AlertTriangle, Car, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +54,7 @@ export default function StartTrip() {
   const [startLat, setStartLat] = useState('');
   const [startLng, setStartLng] = useState('');
   const [gpsMetadata, setGpsMetadata] = useState(null);
+  const [startPresetId, setStartPresetId] = useState(null);
   const [gpsWarning, setGpsWarning] = useState(null);
   const [gpsCapturing, setGpsCapturing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -171,6 +173,10 @@ export default function StartTrip() {
       setGpsWarning(`GPS reading flagged (trust score: ${point.trustScore}/100) — ${reasons.join('; ')}`);
     }
 
+    // Match captured coordinates against saved LocationPresets (Haversine).
+    const matchedPreset = await findMatchingPreset(point.lat, point.lng);
+    setStartPresetId(matchedPreset?.id || null);
+
     setGpsCapturing(false);
   };
 
@@ -225,6 +231,7 @@ export default function StartTrip() {
         start_odometer: startOdometer ? parseFloat(startOdometer) : null,
         odometer_manually_entered: odometerManuallyEntered,
         started_at: now,
+        start_location_preset_id: startPresetId || '',
       };
 
       // Create the trip with the vehicle's record ID as a foreign-key reference.
