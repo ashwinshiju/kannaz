@@ -22,16 +22,16 @@ export default function AppLayout() {
     <TabStackProvider>
       <div className="min-h-screen bg-background">
         {/* Mobile overlay */}
-        {mobileOpen && (
-          <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setMobileOpen(false)} />
-        )}
+        {mobileOpen &&
+        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setMobileOpen(false)} />
+        }
 
         {/* Desktop sidebar */}
         <Sidebar
           collapsed={collapsed}
           onToggle={() => setCollapsed(!collapsed)}
-          className="hidden lg:flex"
-        />
+          className="hidden lg:flex" />
+        
 
         {/* Mobile sidebar */}
         <Sidebar
@@ -40,18 +40,18 @@ export default function AppLayout() {
           className={cn(
             "lg:hidden",
             mobileOpen ? "translate-x-0" : "-translate-x-full"
-          )}
-        />
+          )} />
+        
 
         <Topbar
           onMenuToggle={() => setMobileOpen(!mobileOpen)}
-          sidebarCollapsed={collapsed}
-        />
+          sidebarCollapsed={collapsed} />
+        
         <main className={cn(
           "pt-[calc(4rem_+_env(safe-area-inset-top))] min-h-screen transition-all duration-300 pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0",
           collapsed ? "lg:ml-[68px]" : "lg:ml-[250px]"
         )}>
-          <div className="p-4 lg:p-6">
+          <div className="p-4 lg:p-6 my-2">
             <MobileNavHeader />
             <AnimatedOutlet />
           </div>
@@ -59,6 +59,6 @@ export default function AppLayout() {
 
         <MobileBottomNav />
       </div>
-    </TabStackProvider>
-  );
+    </TabStackProvider>);
+
 }
