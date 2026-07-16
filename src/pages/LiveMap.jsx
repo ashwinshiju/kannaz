@@ -178,6 +178,22 @@ export default function LiveMap() {
                 {trip.completed_at
                   ? moment(trip.completed_at).format('MMM DD, YYYY · HH:mm')
                   : '—'}
+                {(() => {
+                  const mins = trip.duration_minutes != null
+                    ? trip.duration_minutes
+                    : (trip.started_at && trip.completed_at
+                        ? Math.round(moment(trip.completed_at).diff(moment(trip.started_at), 'minutes', true))
+                        : null);
+                  if (mins == null) return null;
+                  const h = Math.floor(mins / 60);
+                  const m = mins % 60;
+                  return (
+                    <span className="ml-2 inline-flex items-center gap-1 text-primary">
+                      <Clock className="w-3 h-3" />
+                      {h > 0 ? `${h}h ${m}m` : `${m}m`}
+                    </span>
+                  );
+                })()}
               </p>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex items-center gap-1.5">
