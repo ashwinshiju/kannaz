@@ -50,14 +50,6 @@
       "type": "number",
       "title": "End Longitude"
     },
-    "start_location_preset_id": {
-      "type": "string",
-      "title": "Start Location Preset ID"
-    },
-    "end_location_preset_id": {
-      "type": "string",
-      "title": "End Location Preset ID"
-    },
     "start_trust_score": {
       "type": "number",
       "title": "Start GPS Trust Score"

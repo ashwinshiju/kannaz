@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { GPSService, calculateDistance } from '@/services/GPSService';
-import { matchLocationPreset } from '@/services/locationPresetMatching';
 import { detectGaps, calculateGapAwareDistance, calculateDistanceMismatch, TRACKING_INTERVAL_MS } from '@/services/trackingGapAnalysis';
 import { MapPin, Loader2, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -29,13 +28,6 @@ export default function EndTripDialog({ trip, open, onClose }) {
   const [submitting, setSubmitting] = useState(false);
   const [odometerError, setOdometerError] = useState(null);
   const [notes, setNotes] = useState('');
-  const [matchedPreset, setMatchedPreset] = useState(null);
-
-  // Fetch location presets for GPS matching on trip end.
-  const { data: locationPresets = [] } = useQuery({
-    queryKey: ['location-presets'],
-    queryFn: () => base44.entities.LocationPreset.list(),
-  });
 
   // Reset all state when the dialog opens for a new trip.
   useEffect(() => {
@@ -49,7 +41,6 @@ export default function EndTripDialog({ trip, open, onClose }) {
       setSubmitting(false);
       setOdometerError(null);
       setNotes('');
-      setMatchedPreset(null);
     }
   }, [open, trip?.id]);
 
@@ -104,16 +95,8 @@ export default function EndTripDialog({ trip, open, onClose }) {
     }
 
     const point = result.point;
-    const latNum = point.lat;
-    const lngNum = point.lng;
-    setEndLat(latNum.toFixed(6));
-    setEndLng(lngNum.toFixed(6));
-
-    // Match captured GPS against location presets — stores preset reference
-    // on the trip so the end location shows a friendly name instead of raw coords.
-    const match = matchLocationPreset(latNum, lngNum, locationPresets);
-    setMatchedPreset(match);
-
+    setEndLat(point.lat.toFixed(6));
+    setEndLng(point.lng.toFixed(6));
     setGpsMetadata({
       trustScore: point.trustScore,
       confidence: point.confidence,
@@ -271,7 +254,6 @@ export default function EndTripDialog({ trip, open, onClose }) {
         discarded_low_trust_count: discardedLowTrustCount,
         discarded_spoofed_count: discardedSpoofedCount,
         distance_mismatch: mismatchResult.mismatch,
-        end_location_preset_id: matchedPreset?.id || '',
         notes: notes || '',
       };
 
@@ -391,13 +373,6 @@ export default function EndTripDialog({ trip, open, onClose }) {
             {gpsMetadata && !gpsWarning && (
               <p className="text-xs text-muted-foreground">
                 Trust score: {gpsMetadata.trustScore}/100 · Accuracy: {gpsMetadata.accuracy != null ? `${Math.round(gpsMetadata.accuracy)}m` : '—'}
-              </p>
-            )}
-            {matchedPreset && (
-              <p className="text-xs text-primary font-medium flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                Matched: {matchedPreset.name}
-                <span className="text-muted-foreground font-normal">({matchedPreset.distanceMeters}m from center)</span>
               </p>
             )}
           </div>
