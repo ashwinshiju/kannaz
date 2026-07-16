@@ -8,6 +8,7 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import PullToRefresh from '@/components/shared/PullToRefresh';
+import LocationPresetManager from '@/components/locations/LocationPresetManager';
 import { useToast } from '@/components/ui/use-toast';
 
 const fields = [
@@ -122,6 +123,11 @@ export default function Locations() {
         fields={fields} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
       <ConfirmDialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)} onConfirm={handleDelete}
         title="Delete Location" description={`Delete "${deleteDialog?.name}"?`} loading={saving} />
+
+      {/* Location Presets — manages named geofence zones for trip start/end matching */}
+      <div className="mt-8">
+        <LocationPresetManager />
+      </div>
     </div>
   );
 }

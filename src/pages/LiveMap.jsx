@@ -6,6 +6,7 @@ import { Route, Gauge, MapPin, Clock, AlertTriangle, Navigation } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import LocationLabel from '@/components/shared/LocationLabel';
 import { cn } from '@/lib/utils';
 import moment from 'moment';
 
@@ -195,6 +196,23 @@ export default function LiveMap() {
                   );
                 })()}
               </p>
+              {(trip.start_lat != null || trip.end_lat != null) && (
+                <div className="flex items-center gap-2 text-xs flex-wrap">
+                  <LocationLabel
+                    presetId={trip.start_location_preset_id}
+                    lat={trip.start_lat}
+                    lng={trip.start_lng}
+                    showLink={false}
+                  />
+                  <Navigation className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <LocationLabel
+                    presetId={trip.end_location_preset_id}
+                    lat={trip.end_lat}
+                    lng={trip.end_lng}
+                    showLink={false}
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex items-center gap-1.5">
                   <Gauge className="w-3.5 h-3.5 text-muted-foreground" />

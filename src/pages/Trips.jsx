@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTripLocationTracking } from '@/hooks/useTripLocationTracking';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Route, Play, CheckCircle2, Clock, MapPin, Navigation } from 'lucide-react';
+import { Route, Play, CheckCircle2, Clock, Navigation } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
@@ -11,6 +11,7 @@ import FormModal from '@/components/shared/FormModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import EndTripDialog from '@/components/trips/EndTripDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
+import LocationLabel from '@/components/shared/LocationLabel';
 import PullToRefresh from '@/components/shared/PullToRefresh';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
@@ -157,12 +158,12 @@ export default function Trips() {
       key: 'start_lat', label: 'From',
       render: (_, row) => {
         if (row.start_lat == null || row.start_lng == null) return <span className="text-muted-foreground">—</span>;
-        const url = `https://www.google.com/maps/search/?api=1&query=${row.start_lat},${row.start_lng}`;
         return (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
-            <MapPin className="w-3 h-3" />
-            <span className="font-mono text-xs">{row.start_lat.toFixed(4)}, {row.start_lng.toFixed(4)}</span>
-          </a>
+          <LocationLabel
+            presetId={row.start_location_preset_id}
+            lat={row.start_lat}
+            lng={row.start_lng}
+          />
         );
       }
     },
@@ -170,12 +171,12 @@ export default function Trips() {
       key: 'end_lat', label: 'To',
       render: (_, row) => {
         if (row.end_lat == null || row.end_lng == null) return <span className="text-muted-foreground">—</span>;
-        const url = `https://www.google.com/maps/search/?api=1&query=${row.end_lat},${row.end_lng}`;
         return (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
-            <MapPin className="w-3 h-3" />
-            <span className="font-mono text-xs">{row.end_lat.toFixed(4)}, {row.end_lng.toFixed(4)}</span>
-          </a>
+          <LocationLabel
+            presetId={row.end_location_preset_id}
+            lat={row.end_lat}
+            lng={row.end_lng}
+          />
         );
       }
     },

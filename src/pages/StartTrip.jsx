@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { GPSService, GPS_DEFAULTS } from '@/services/GPSService';
 import { ChevronLeft, MapPin, Loader2, AlertTriangle, Car, Pencil } from 'lucide-react';
+import { matchLocationPreset } from '@/services/locationPresetMatching';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -56,6 +57,13 @@ export default function StartTrip() {
   const [gpsWarning, setGpsWarning] = useState(null);
   const [gpsCapturing, setGpsCapturing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [matchedPreset, setMatchedPreset] = useState(null);
+
+  // Fetch location presets for GPS matching on trip start.
+  const { data: locationPresets = [] } = useQuery({
+    queryKey: ['location-presets'],
+    queryFn: () => base44.entities.LocationPreset.list(),
+  });
 
   const vehicleOptions = availableVehicles.map(v => ({
     value: v.id,
@@ -146,8 +154,16 @@ export default function StartTrip() {
     }
 
     const point = result.point;
-    setStartLat(point.lat.toFixed(6));
-    setStartLng(point.lng.toFixed(6));
+    const latNum = point.lat;
+    const lngNum = point.lng;
+    setStartLat(latNum.toFixed(6));
+    setStartLng(lngNum.toFixed(6));
+
+    // Match captured GPS against location presets — stores preset reference
+    // on the trip so the start location shows a friendly name instead of raw coords.
+    const match = matchLocationPreset(latNum, lngNum, locationPresets);
+    setMatchedPreset(match);
+
     setGpsMetadata({
       trustScore: point.trustScore,
       confidence: point.confidence,
@@ -215,6 +231,7 @@ export default function StartTrip() {
         vehicle_name: vehicle.name,
         department: vehicle.assigned_department || '',
         start_location: `GPS: ${parseFloat(startLat).toFixed(6)}, ${parseFloat(startLng).toFixed(6)}`,
+        start_location_preset_id: matchedPreset?.id || '',
         end_location: '',
         start_lat: parseFloat(startLat),
         start_lng: parseFloat(startLng),
@@ -395,6 +412,13 @@ export default function StartTrip() {
             {gpsMetadata && !gpsWarning && (
               <p className="text-xs text-muted-foreground">
                 Trust score: {gpsMetadata.trustScore}/100 · Accuracy: {gpsMetadata.accuracy != null ? `${Math.round(gpsMetadata.accuracy)}m` : '—'}
+              </p>
+            )}
+            {matchedPreset && (
+              <p className="text-xs text-primary font-medium flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                Matched: {matchedPreset.name}
+                <span className="text-muted-foreground font-normal">({matchedPreset.distanceMeters}m from center)</span>
               </p>
             )}
           </div>

@@ -1,0 +1,32 @@
+{
+  "name": "LocationPreset",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Preset Name"
+    },
+    "latitude": {
+      "type": "number",
+      "title": "Latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "title": "Longitude"
+    },
+    "radius": {
+      "type": "number",
+      "default": 100,
+      "title": "Radius (meters)"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    }
+  },
+  "required": [
+    "name",
+    "latitude",
+    "longitude"
+  ]
+}
