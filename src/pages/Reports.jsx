@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import {
-  BarChart3, Download, Filter, ChevronDown, Route, Car, Users, Building2, MapPin
+  BarChart3, Download, Filter, ChevronDown, Route, Car, Users, Building2, MapPin, Trophy
 } from 'lucide-react';
+import moment from 'moment';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,36 @@ export default function Reports() {
     value: s.vehicles.filter(v => v.fuel_type === f).length,
   })).filter(d => d.value > 0);
 
+  // Weekly highlights — most used vehicle and most driven driver this week.
+  const weekStart = moment().startOf('week');
+  const weekTrips = s.trips.filter(t => {
+    const d = t.started_at ? moment(t.started_at) : moment(t.created_date);
+    return d.isValid() && d.isSameOrAfter(weekStart);
+  });
+
+  const vehicleTripCounts = {};
+  weekTrips.forEach(t => {
+    const key = t.vehicle_name || t.vehicle_id || 'Unknown';
+    vehicleTripCounts[key] = (vehicleTripCounts[key] || 0) + 1;
+  });
+  const topVehicle = Object.entries(vehicleTripCounts).sort((a, b) => b[1] - a[1])[0];
+
+  const driverTripCounts = {};
+  weekTrips.forEach(t => {
+    const key = t.employee_name || t.employee_id || 'Unknown';
+    driverTripCounts[key] = (driverTripCounts[key] || 0) + 1;
+  });
+  const topDriver = Object.entries(driverTripCounts).sort((a, b) => b[1] - a[1])[0];
+
+  // Distance per vehicle — for vehicle usage ranking.
+  const distanceByVehicle = {};
+  s.trips.forEach(t => {
+    if (t.vehicle_id) distanceByVehicle[t.vehicle_id] = (distanceByVehicle[t.vehicle_id] || 0) + (t.distance_km || 0);
+  });
+  const topDistanceVehicle = s.vehicles
+    .map(v => ({ name: v.name, distance: distanceByVehicle[v.id] || 0 }))
+    .sort((a, b) => b.distance - a.distance)[0];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -100,6 +131,40 @@ export default function Reports() {
         <KPICard title="Fleet Size" value={s.vehicles.length} icon={Car} />
         <KPICard title="Fuel Spend" value={`$${totalFuelCost.toFixed(0)}`} icon={BarChart3} />
         <KPICard title="Maintenance Spend" value={`$${totalMaintCost.toFixed(0)}`} icon={BarChart3} />
+      </div>
+
+      {/* Weekly Highlights */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-card rounded-xl border border-border p-5 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+            <Trophy className="w-5 h-5 text-amber-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-muted-foreground">Most Used Vehicle (This Week)</p>
+            <p className="text-lg font-bold truncate">{topVehicle ? topVehicle[0] : 'No data'}</p>
+            <p className="text-xs text-muted-foreground">{topVehicle ? `${topVehicle[1]} trips` : '—'}</p>
+          </div>
+        </div>
+        <div className="bg-card rounded-xl border border-border p-5 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+            <Trophy className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-muted-foreground">Most Driven Driver (This Week)</p>
+            <p className="text-lg font-bold truncate">{topDriver ? topDriver[0] : 'No data'}</p>
+            <p className="text-xs text-muted-foreground">{topDriver ? `${topDriver[1]} trips` : '—'}</p>
+          </div>
+        </div>
+        <div className="bg-card rounded-xl border border-border p-5 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+            <Car className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-muted-foreground">Highest Mileage Vehicle (All Time)</p>
+            <p className="text-lg font-bold truncate">{topDistanceVehicle?.distance > 0 ? topDistanceVehicle.name : 'No data'}</p>
+            <p className="text-xs text-muted-foreground">{topDistanceVehicle?.distance > 0 ? `${topDistanceVehicle.distance.toFixed(0)} km` : '—'}</p>
+          </div>
+        </div>
       </div>
 
       <Tabs defaultValue="trips">

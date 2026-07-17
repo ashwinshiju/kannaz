@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Car } from 'lucide-react';
@@ -36,18 +36,6 @@ const fields = [
   ]},
 ];
 
-const columns = [
-  { key: 'reg_no', label: 'Reg No', render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val}</span> },
-  { key: 'name', label: 'Vehicle', render: (val, row) => (
-    <Link to={`/vehicles/${row.id}`} className="font-medium text-primary hover:underline">{val}</Link>
-  )},
-  { key: 'make', label: 'Make' },
-  { key: 'model', label: 'Model' },
-  { key: 'fuel_type', label: 'Fuel', render: (val) => <span className="capitalize">{val || '—'}</span> },
-  { key: 'assigned_department', label: 'Department' },
-  { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
-];
-
 export default function Vehicles() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -58,6 +46,19 @@ export default function Vehicles() {
     queryFn: () => base44.entities.Vehicle.list(),
   });
 
+  // Fetch trips to compute distance travelled per vehicle.
+  const { data: trips = [] } = useQuery({
+    queryKey: ['trips'],
+    queryFn: () => base44.entities.Trip.list().catch(() => []),
+  });
+  const distanceByVehicle = useMemo(() => {
+    const m = {};
+    trips.forEach(t => {
+      if (t.vehicle_id) m[t.vehicle_id] = (m[t.vehicle_id] || 0) + (t.distance_km || 0);
+    });
+    return m;
+  }, [trips]);
+
   // Fetch Employee records to resolve the current user's role and department.
   const { data: employees = [] } = useQuery({
     queryKey: ['employees'],
@@ -65,6 +66,22 @@ export default function Vehicles() {
   });
   const currentEmployee = employees.find((e) => e.email === user?.email);
   const canManage = currentEmployee?.role === 'manager' || currentEmployee?.role === 'admin';
+
+  const columns = [
+    { key: 'reg_no', label: 'Reg No', render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val}</span> },
+    { key: 'name', label: 'Vehicle', render: (val, row) => (
+      <Link to={`/vehicles/${row.id}`} className="font-medium text-primary hover:underline">{val}</Link>
+    )},
+    { key: 'make', label: 'Make' },
+    { key: 'model', label: 'Model' },
+    { key: 'fuel_type', label: 'Fuel', render: (val) => <span className="capitalize">{val || '—'}</span> },
+    { key: 'assigned_department', label: 'Department' },
+    { key: 'distance', label: 'Distance', render: (_, row) => {
+      const dist = distanceByVehicle[row.id] || 0;
+      return <span className="text-sm">{dist > 0 ? `${dist.toFixed(0)} km` : '—'}</span>;
+    }},
+    { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
+  ];
 
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
