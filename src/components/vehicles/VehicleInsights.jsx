@@ -20,10 +20,12 @@ export default function VehicleInsights({ trips, vehicles }) {
   // Top driver this week — most trips in the last 7 days
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const tripCountByDriver = {};
+  const distanceByDriver = {};
   trips.forEach((t) => {
     const tripDate = new Date(t.completed_at || t.created_date).getTime();
     if (tripDate >= weekAgo && t.employee_name) {
       tripCountByDriver[t.employee_name] = (tripCountByDriver[t.employee_name] || 0) + 1;
+      distanceByDriver[t.employee_name] = (distanceByDriver[t.employee_name] || 0) + (t.distance_km || 0);
     }
   });
   const topDriver = Object.entries(tripCountByDriver).sort((a, b) => b[1] - a[1])[0];
@@ -40,7 +42,7 @@ export default function VehicleInsights({ trips, vehicles }) {
       icon: User,
       label: 'Top Driver (This Week)',
       value: topDriver?.[0] || '—',
-      sub: `${topDriver?.[1] || 0} trips`,
+      sub: `${topDriver?.[1] || 0} trips • ${(distanceByDriver[topDriver?.[0]] || 0).toFixed(0)} km`,
       color: 'bg-blue-500/10 text-blue-600',
     },
   ];
