@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Fuel } from 'lucide-react';
+import { Fuel, Plus, Download } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import PullToRefresh from '@/components/shared/PullToRefresh';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import FuelRecordForm from '@/components/fuel/FuelRecordForm';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import { exportToCSV } from '@/utils/csvExport';
 import moment from 'moment';
 
 const QUERY_KEY = ['fuel-records'];
@@ -19,6 +21,19 @@ const FUEL_TYPE_LABELS = {
   eplus_91: 'EPlus 91',
   diesel: 'Diesel',
 };
+
+const exportColumns = [
+  { key: 'fuel_date', label: 'Date' },
+  { key: 'vehicle_name', label: 'Vehicle' },
+  { key: 'employee_name', label: 'Employee' },
+  { key: 'fuel_type', label: 'Fuel Type' },
+  { key: 'litres', label: 'Litres' },
+  { key: 'fuel_rate', label: 'Rate (AED/L)' },
+  { key: 'cost', label: 'Cost (AED)' },
+  { key: 'odometer', label: 'Odometer (km)' },
+  { key: 'station', label: 'Station' },
+  { key: 'efficiency_kmpl', label: 'Efficiency (km/L)' },
+];
 
 const columns = [
   { key: 'fuel_date', label: 'Date', render: (val) => val ? moment(val).format('MMM DD, YYYY') : '—' },
@@ -36,7 +51,7 @@ export default function FuelLog() {
   const { toast } = useToast();
   const { data = [], isLoading: loading, refetch } = useQuery({
     queryKey: QUERY_KEY,
-    queryFn: () => base44.entities.FuelRecord.list(),
+    queryFn: () => base44.entities.FuelRecord.list('-fuel_date', 200),
   });
 
   const { data: fuelPrices } = useQuery({
@@ -54,6 +69,11 @@ export default function FuelLog() {
 
   const openCreate = () => { setEditing(null); setFormOpen(true); };
   const openEdit = (row) => { setEditing(row); setFormOpen(true); };
+
+  const handleExport = () => {
+    exportToCSV(data, exportColumns, `fuel-log-${moment().format('YYYYMMDD-HHmm')}`);
+    toast({ title: 'Fuel log exported' });
+  };
 
   const handleSave = async (formData) => {
     setSaving(true);
@@ -103,7 +123,15 @@ export default function FuelLog() {
   return (
     <PullToRefresh onRefresh={refetch}>
       <div>
-        <PageHeader title="Fuel Log" subtitle={`${data.length} records`} action={openCreate} actionLabel="Add Fuel Record" actionIcon={Fuel} />
+        <PageHeader title="Fuel Log" subtitle={`${data.length} records`} />
+        <div className="flex justify-end gap-2 mb-4">
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={!data.length}>
+            <Download className="w-4 h-4 mr-1" /> Export CSV
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1" /> Add Fuel Record
+          </Button>
+        </div>
         <DataTable
           data={data} columns={columns} searchPlaceholder="Search fuel records..."
           filters={[{ key: 'fuel_type', label: 'Fuel Type', options: [
