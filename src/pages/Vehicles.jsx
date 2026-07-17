@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Car } from 'lucide-react';
+import { Car, Gauge } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -11,6 +11,7 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PullToRefresh from '@/components/shared/PullToRefresh';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import VehicleInsights from '@/components/vehicles/VehicleInsights';
 import { useToast } from '@/components/ui/use-toast';
 
 const QUERY_KEY = ['vehicles'];
@@ -36,7 +37,7 @@ const fields = [
   ]},
 ];
 
-const columns = [
+const baseColumns = [
   { key: 'reg_no', label: 'Reg No', render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val}</span> },
   { key: 'name', label: 'Vehicle', render: (val, row) => (
     <Link to={`/vehicles/${row.id}`} className="font-medium text-primary hover:underline">{val}</Link>
@@ -57,6 +58,41 @@ export default function Vehicles() {
     queryKey: QUERY_KEY,
     queryFn: () => base44.entities.Vehicle.list(),
   });
+
+  // Fetch trips to compute per-vehicle distance and weekly insights.
+  const { data: trips = [] } = useQuery({
+    queryKey: ['trips'],
+    queryFn: () => base44.entities.Trip.list().catch(() => []),
+  });
+
+  const distanceByVehicle = useMemo(() => {
+    const m = {};
+    trips.forEach((t) => {
+      const key = t.vehicle_id || t.vehicle_name;
+      if (!key) return;
+      m[key] = (m[key] || 0) + (t.distance_km || 0);
+    });
+    return m;
+  }, [trips]);
+
+  const columns = useMemo(() => [
+    ...baseColumns.slice(0, 2),
+    {
+      key: '_distance', label: 'Distance',
+      render: (_, row) => {
+        const km = row._distance || 0;
+        return <span className="text-sm font-medium">{km > 0 ? `${km.toFixed(0)} km` : '—'}</span>;
+      },
+    },
+    ...baseColumns.slice(2),
+  ], []);
+
+  const tableData = useMemo(() =>
+    data.map((v) => ({
+      ...v,
+      _distance: distanceByVehicle[v.id] ?? distanceByVehicle[v.name] ?? 0,
+    })),
+  [data, distanceByVehicle]);
 
   // Fetch Employee records to resolve the current user's role and department.
   const { data: employees = [] } = useQuery({
@@ -124,8 +160,9 @@ export default function Vehicles() {
     <PullToRefresh onRefresh={refetch}>
       <div>
         <PageHeader title="Vehicles" subtitle={`${data.length} vehicles in fleet`} action={canManage ? openCreate : undefined} actionLabel="Add Vehicle" actionIcon={Car} />
+        <VehicleInsights trips={trips} vehicles={data} />
         <DataTable
-          data={data} columns={columns} searchPlaceholder="Search vehicles..."
+          data={tableData} columns={columns} searchPlaceholder="Search vehicles..."
           filters={[
             { key: 'status', label: 'Status', options: [
               { value: 'available', label: 'Available' }, { value: 'in_use', label: 'In Use' },
