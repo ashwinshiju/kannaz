@@ -12,6 +12,7 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
 import EndTripDialog from '@/components/trips/EndTripDialog';
+import { computeEffectiveStatus } from '@/utils/vehicleProximity';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -51,7 +52,8 @@ export default function Dashboard() {
 
   const s = stats;
   const activeTrips = s.trips.filter(t => t.status === 'in_progress').length;
-  const availableVehicles = s.vehicles.filter(v => v.status === 'available').length;
+  const effectiveVehicles = s.vehicles.map(v => ({ ...v, status: computeEffectiveStatus(v, s.trips, s.presets) }));
+  const availableVehicles = effectiveVehicles.filter(v => v.status === 'available').length;
   const expiringDocs = s.docs.filter(d => d.status === 'expiring_soon' || d.status === 'expired').length;
   const pendingMaint = s.maintenance.filter(m => m.status === 'scheduled').length;
 
@@ -62,7 +64,7 @@ export default function Dashboard() {
 
   const vehiclesByStatus = ['available', 'in_use', 'maintenance', 'inactive'].map(status => ({
     name: status.replace(/_/g, ' '),
-    value: s.vehicles.filter(v => v.status === status).length
+    value: effectiveVehicles.filter(v => v.status === status).length
   })).filter(d => d.value > 0);
 
   const recentTrips = [...s.trips].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 5);

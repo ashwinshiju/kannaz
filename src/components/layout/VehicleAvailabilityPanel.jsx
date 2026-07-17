@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Car, User, Loader2, CircleDot } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useVehicleProximityStatus } from '@/hooks/useVehicleProximityStatus';
 
 /**
  * VehicleAvailabilityPanel — live board of vehicle usage status.
@@ -19,13 +20,16 @@ export default function VehicleAvailabilityPanel() {
     queryFn: () => base44.entities.Vehicle.list(),
   });
 
-  const { data: activeTrips = [] } = useQuery({
+  const { data: allTrips = [] } = useQuery({
     queryKey: ['trips', 'active'],
     queryFn: async () => {
       const all = await base44.entities.Trip.list('-created_date', 200);
-      return all.filter((t) => t.status === 'in_progress');
+      return all;
     },
   });
+
+  const activeTrips = allTrips.filter((t) => t.status === 'in_progress');
+  const { getEffectiveStatus } = useVehicleProximityStatus(allTrips);
 
   // Map vehicle_id → driver name from the active trip
   const usageByVehicleId = {};
@@ -34,7 +38,7 @@ export default function VehicleAvailabilityPanel() {
   });
 
   const inUse = vehicles.filter((v) => v.status === 'in_use' && usageByVehicleId[v.id]);
-  const available = vehicles.filter((v) => v.status === 'available');
+  const available = vehicles.filter((v) => getEffectiveStatus(v) === 'available');
 
   if (isLoading) {
     return (

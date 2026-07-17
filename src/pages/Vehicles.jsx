@@ -12,6 +12,7 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import PullToRefresh from '@/components/shared/PullToRefresh';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import VehicleInsights from '@/components/vehicles/VehicleInsights';
+import { useVehicleProximityStatus } from '@/hooks/useVehicleProximityStatus';
 import { useToast } from '@/components/ui/use-toast';
 
 const QUERY_KEY = ['vehicles'];
@@ -75,6 +76,8 @@ export default function Vehicles() {
     return m;
   }, [trips]);
 
+  const { getEffectiveStatus } = useVehicleProximityStatus(trips);
+
   const columns = useMemo(() => [
     ...baseColumns.slice(0, 2),
     {
@@ -91,8 +94,9 @@ export default function Vehicles() {
     data.map((v) => ({
       ...v,
       _distance: distanceByVehicle[v.id] ?? distanceByVehicle[v.name] ?? 0,
+      status: getEffectiveStatus(v),
     })),
-  [data, distanceByVehicle]);
+  [data, distanceByVehicle, getEffectiveStatus]);
 
   // Fetch Employee records to resolve the current user's role and department.
   const { data: employees = [] } = useQuery({

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import MobileSelect from '@/components/shared/MobileSelect';
 import { useToast } from '@/components/ui/use-toast';
+import { useVehicleProximityStatus } from '@/hooks/useVehicleProximityStatus';
 
 const VEHICLES_QUERY_KEY = ['vehicles'];
 const TRIPS_QUERY_KEY = ['trips'];
@@ -35,11 +36,23 @@ export default function StartTrip() {
   const queryClient = useQueryClient();
 
   // Live query against the Vehicles entity — same entity used on the Vehicles
-  // management page (base44.entities.Vehicle). Filtered to status === 'available'.
-  const { data: availableVehicles = [], isLoading: vehiclesLoading } = useQuery({
+  // management page (base44.entities.Vehicle). Filtered to status === 'available',
+  // then further filtered by proximity to the Skyline office.
+  const { data: rawAvailableVehicles = [], isLoading: vehiclesLoading } = useQuery({
     queryKey: ['vehicles', 'available'],
     queryFn: () => base44.entities.Vehicle.filter({ status: 'available' }),
   });
+
+  const { data: allTrips = [] } = useQuery({
+    queryKey: ['trips'],
+    queryFn: () => base44.entities.Trip.list().catch(() => []),
+  });
+
+  const { getEffectiveStatus } = useVehicleProximityStatus(allTrips);
+
+  const availableVehicles = rawAvailableVehicles.filter(
+    (v) => getEffectiveStatus(v) === 'available'
+  );
 
   const gpsServiceRef = useRef(null);
   if (!gpsServiceRef.current) {
@@ -205,7 +218,7 @@ export default function StartTrip() {
       // Stale-vehicle check: re-fetch the selected vehicle to confirm it is
       // still available between when the dropdown was loaded and now.
       const vehicle = await base44.entities.Vehicle.get(vehicleId);
-      if (vehicle.status !== 'available') {
+      if (getEffectiveStatus(vehicle) !== 'available') {
         toast({
           title: 'Vehicle no longer available',
           description: 'This vehicle was assigned to another trip. Please select a different vehicle.',
