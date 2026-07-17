@@ -94,10 +94,18 @@ export default function Dashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard title="Total Employees" value={s.employees.length} icon={Users} subtitle={`${s.employees.filter(e => e.status === 'active').length} active`} />
-        <KPICard title="Fleet Vehicles" value={s.vehicles.length} icon={Car} subtitle={`${availableVehicles} available`} trend="up" trendValue="+2" />
-        <KPICard title="Active Trips" value={activeTrips} icon={Route} subtitle={`${s.trips.length} total trips`} />
-        <KPICard title="Locations" value={s.locations.length} icon={MapPin} subtitle={`${s.locations.filter(l => l.category === 'office').length} offices`} />
+        <Link to="/employees" className="block rounded-xl active:bg-accent/40 transition-colors">
+          <KPICard title="Total Employees" value={s.employees.length} icon={Users} subtitle={`${s.employees.filter(e => e.status === 'active').length} active`} />
+        </Link>
+        <Link to="/vehicles" className="block rounded-xl active:bg-accent/40 transition-colors">
+          <KPICard title="Fleet Vehicles" value={s.vehicles.length} icon={Car} subtitle={`${availableVehicles} available`} trend="up" trendValue="+2" />
+        </Link>
+        <Link to="/trips" className="block rounded-xl active:bg-accent/40 transition-colors">
+          <KPICard title="Active Trips" value={activeTrips} icon={Route} subtitle={`${s.trips.length} total trips`} />
+        </Link>
+        <Link to="/locations" className="block rounded-xl active:bg-accent/40 transition-colors">
+          <KPICard title="Locations" value={s.locations.length} icon={MapPin} subtitle={`${s.locations.filter(l => l.category === 'office').length} offices`} />
+        </Link>
       </div>
 
       {/* Alert Cards */}
