@@ -104,7 +104,7 @@ export default function Dashboard() {
           <KPICard title="Active Trips" value={activeTrips} icon={Route} subtitle={`${s.trips.length} total trips`} />
         </Link>
         <Link to="/locations" className="block rounded-xl active:bg-accent/40 transition-colors">
-          <KPICard title="Locations" value={s.locations.length} icon={MapPin} subtitle={`${s.locations.filter(l => l.category === 'office').length} offices`} />
+          <KPICard title="Locations" value={s.presets.length} icon={MapPin} subtitle={`${s.locations.length} raw locations`} />
         </Link>
       </div>
 
