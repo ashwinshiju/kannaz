@@ -173,7 +173,7 @@ export default function Trips() {
 
   const acknowledgeTrip = (trip) => updateTripStatus(trip, { status: 'acknowledged', acknowledged_at: new Date().toISOString() }, 'Trip acknowledged');
 
-  const columns = [
+  const allColumns = [
     { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
     { key: 'employee_name', label: 'Employee', render: (val) => <span className="font-medium">{val}</span> },
     { key: 'vehicle_name', label: 'Vehicle' },
@@ -205,8 +205,8 @@ export default function Trips() {
         );
       }
     },
-    { key: 'purpose', label: 'Purpose', render: (val) => <span className="capitalize">{val || '—'}</span> },
-    { key: 'trip_number', label: 'Trip #', render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
+    { key: 'purpose', label: 'Purpose', managerOnly: true, render: (val) => <span className="capitalize">{val || '—'}</span> },
+    { key: 'trip_number', label: 'Trip #', managerOnly: true, render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
     { key: 'created_date', label: 'Date', render: (val, row) => {
       const tz = 240;
       const start = row.started_at ? moment.utc(row.started_at).utcOffset(tz) : (val ? moment.utc(val).utcOffset(tz) : null);
@@ -247,6 +247,7 @@ export default function Trips() {
       )
     },
   ];
+  const columns = canManage ? allColumns : allColumns.filter((col) => !col.managerOnly);
 
   if (loading) return <div className="space-y-6"><PageHeader title="Trips" /><TableSkeleton /></div>;
 
@@ -272,9 +273,9 @@ export default function Trips() {
               { value: 'created', label: 'Created' }, { value: 'in_progress', label: 'In Progress' },
               { value: 'completed', label: 'Completed' }, { value: 'acknowledged', label: 'Acknowledged' },
             ]},
-            { key: 'purpose', label: 'Purpose', options: [
+            ...(canManage ? [{ key: 'purpose', label: 'Purpose', options: [
               { value: 'official', label: 'Official' }, { value: 'personal', label: 'Personal' },
-            ]},
+            ]}] : []),
           ]}
           onEdit={canManage ? openEdit : undefined} onDelete={canManage ? setDeleteDialog : undefined}
           emptyTitle="No trips yet" emptyDescription="Create your first trip" emptyAction={openCreate} emptyActionLabel="Create Trip"
