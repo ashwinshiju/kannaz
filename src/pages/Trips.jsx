@@ -53,6 +53,20 @@ export default function Trips() {
     return m;
   }, [presets]);
 
+  // Fetch Employee records to resolve the current user's role and department.
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: () => base44.entities.Employee.list().catch(() => []),
+  });
+  const currentEmployee = employees.find((e) => e.email === user?.email);
+  const canManage = currentEmployee?.role === 'manager' || currentEmployee?.role === 'admin';
+  // Department managers can manage trips in their own department; admins manage all.
+  const canManageTrip = (row) =>
+    canManage &&
+    (currentEmployee?.role === 'admin' ||
+      !currentEmployee?.department ||
+      row.department === currentEmployee?.department);
+
   // If the current user already has an in-progress trip, the primary action
   // becomes "End Trip" instead of "Create Trip".
   const activeTrip = data.find(
@@ -207,12 +221,12 @@ export default function Trips() {
       key: 'id', label: '', sortable: false,
       render: (_, row) => (
         <div className="flex gap-1">
-          {row.status === 'created' && (
+          {row.status === 'created' && canManageTrip(row) && (
             <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); startTrip(row); }} className="h-7 text-xs gap-1">
               <Play className="w-3 h-3" /> Start
             </Button>
           )}
-          {row.status === 'in_progress' && row.employee_id === user?.id && (
+          {row.status === 'in_progress' && (row.employee_id === user?.id || canManageTrip(row)) && (
             <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setEndTripDialog(row); }} className="h-7 text-xs gap-1">
               <CheckCircle2 className="w-3 h-3" /> End Trip
             </Button>
@@ -262,7 +276,7 @@ export default function Trips() {
               { value: 'official', label: 'Official' }, { value: 'personal', label: 'Personal' },
             ]},
           ]}
-          onEdit={openEdit} onDelete={setDeleteDialog}
+          onEdit={canManage ? openEdit : undefined} onDelete={canManage ? setDeleteDialog : undefined}
           emptyTitle="No trips yet" emptyDescription="Create your first trip" emptyAction={openCreate} emptyActionLabel="Create Trip"
         />
         <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Trip' : 'Create Trip'}
