@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { cn } from '@/lib/utils';
 import moment from 'moment';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export default function LiveMap() {
+  const { isAdmin } = useUserRole();
   const [searchParams, setSearchParams] = useSearchParams();
   const highlightTripId = searchParams.get('trip');
   const [vehicleFilter, setVehicleFilter] = useState('all');
@@ -167,9 +169,11 @@ export default function LiveMap() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
-                    {trip.trip_number || '—'}
-                  </span>
+                  {isAdmin && (
+                    <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
+                      {trip.trip_number || '—'}
+                    </span>
+                  )}
                   <p className="text-sm font-medium mt-1">{trip.vehicle_name || '—'}</p>
                 </div>
                 <Clock className="w-4 h-4 text-muted-foreground" />
@@ -277,7 +281,7 @@ export default function LiveMap() {
                   GPS Trust Score: {trip.end_trust_score}/100
                 </p>
               )}
-              {trip.start_lat != null && trip.start_lng != null && trip.end_lat != null && trip.end_lng != null && (
+              {isAdmin && trip.start_lat != null && trip.start_lng != null && trip.end_lat != null && trip.end_lng != null && (
                 <a
                   href={`https://www.google.com/maps/dir/?api=1&origin=${trip.start_lat},${trip.start_lng}&destination=${trip.end_lat},${trip.end_lng}&travelmode=driving`}
                   target="_blank"
