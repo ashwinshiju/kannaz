@@ -62,10 +62,27 @@ export default function Dashboard() {
     value: s.trips.filter(t => t.status === status).length
   })).filter(d => d.value > 0);
 
-  const vehiclesByStatus = ['available', 'in_use', 'maintenance', 'inactive'].map(status => ({
-    name: status.replace(/_/g, ' '),
-    value: effectiveVehicles.filter(v => v.status === status).length
-  })).filter(d => d.value > 0);
+  const monthlyTrips = (() => {
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        label: d.toLocaleString('en-US', { month: 'short' }),
+        value: 0,
+      });
+    }
+    const idx = new Map(months.map(m => [m.key, m]));
+    for (const t of s.trips) {
+      const d = new Date(t.started_at || t.created_date);
+      if (isNaN(d)) continue;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const m = idx.get(key);
+      if (m) m.value++;
+    }
+    return months;
+  })();
 
   const recentTrips = [...s.trips].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 5);
   const presetMap = new Map((s.presets || []).map(p => [p.id, p]));
@@ -157,20 +174,16 @@ export default function Dashboard() {
             <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">No trip data yet</div>
           )}
         </ChartCard>
-        <ChartCard title="Vehicle Utilization" subtitle="By status">
-          {vehiclesByStatus.length > 0 ? (
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={vehiclesByStatus}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="name" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip />
-                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">No vehicle data yet</div>
-          )}
+        <ChartCard title="Monthly Vehicle Trips" subtitle="Last 6 months">
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={monthlyTrips}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="label" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+              <YAxis tick={{ fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="value" name="Trips" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </ChartCard>
       </div>
 
