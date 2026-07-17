@@ -28,7 +28,7 @@ export function buildLastLocationsByVehicle(trips = []) {
     const key = trip.vehicle_id || trip.vehicle_name;
     if (!key || map[key]) continue;
     if (trip.end_lat != null && trip.end_lng != null) {
-      map[key] = { lat: trip.end_lat, lng: trip.end_lng };
+      map[key] = { lat: trip.end_lat, lng: trip.end_lng, employee_id: trip.employee_id };
     }
   }
   return map;

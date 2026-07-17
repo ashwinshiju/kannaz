@@ -61,5 +61,5 @@ export function useVehicleProximityStatus(trips = []) {
     [trips, presets]
   );
 
-  return { getEffectiveStatus, statusMap, skylinePreset };
+  return { getEffectiveStatus, statusMap, skylinePreset, lastLocationByVehicle };
 }

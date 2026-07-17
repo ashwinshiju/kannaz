@@ -48,11 +48,20 @@ export default function StartTrip() {
     queryFn: () => base44.entities.Trip.list().catch(() => []),
   });
 
-  const { getEffectiveStatus } = useVehicleProximityStatus(allTrips);
+  const { getEffectiveStatus, lastLocationByVehicle } = useVehicleProximityStatus(allTrips);
 
-  const availableVehicles = rawAvailableVehicles.filter(
-    (v) => getEffectiveStatus(v) === 'available'
-  );
+  // Include vehicles that are effectively available, plus inactive vehicles
+  // (away from Skyline office) only if the current user was the last driver.
+  const availableVehicles = rawAvailableVehicles.filter((v) => {
+    const effectiveStatus = getEffectiveStatus(v);
+    if (effectiveStatus === 'available') return true;
+    if (effectiveStatus === 'inactive') {
+      const key = v.id || v.name;
+      const lastUser = lastLocationByVehicle[key]?.employee_id;
+      return !!lastUser && lastUser === user?.id;
+    }
+    return false;
+  });
 
   const gpsServiceRef = useRef(null);
   if (!gpsServiceRef.current) {
@@ -72,10 +81,13 @@ export default function StartTrip() {
   const [gpsCapturing, setGpsCapturing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const vehicleOptions = availableVehicles.map(v => ({
-    value: v.id,
-    label: `${v.reg_no} — ${v.make} ${v.model}`.trim(),
-  }));
+  const vehicleOptions = availableVehicles.map(v => {
+    const isInactive = getEffectiveStatus(v) === 'inactive';
+    return {
+      value: v.id,
+      label: `${v.reg_no} — ${v.make} ${v.model}${isInactive ? ' (away from office)' : ''}`.trim(),
+    };
+  });
 
   // Auto-fetch the vehicle's last known odometer reading when a vehicle is
   // selected. The chain reads from live Trip records (most recently completed
@@ -218,7 +230,11 @@ export default function StartTrip() {
       // Stale-vehicle check: re-fetch the selected vehicle to confirm it is
       // still available between when the dropdown was loaded and now.
       const vehicle = await base44.entities.Vehicle.get(vehicleId);
-      if (getEffectiveStatus(vehicle) !== 'available') {
+      const effectiveStatus = getEffectiveStatus(vehicle);
+      const vehicleKey = vehicle.id || vehicle.name;
+      const lastUser = lastLocationByVehicle[vehicleKey]?.employee_id;
+      const canUseInactive = effectiveStatus === 'inactive' && !!lastUser && lastUser === user?.id;
+      if (effectiveStatus !== 'available' && !canUseInactive) {
         toast({
           title: 'Vehicle no longer available',
           description: 'This vehicle was assigned to another trip. Please select a different vehicle.',
