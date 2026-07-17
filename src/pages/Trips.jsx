@@ -5,7 +5,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Route, Play, CheckCircle2, Clock, MapPin, Navigation } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import FormModal from '@/components/shared/FormModal';
@@ -38,7 +37,6 @@ export default function Trips() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isAdmin, canManage, currentEmployee } = useUserRole();
 
   const { data = [], isLoading: loading, refetch } = useQuery({
     queryKey: QUERY_KEY,
@@ -54,6 +52,14 @@ export default function Trips() {
     presets.forEach((p) => m.set(p.id, p));
     return m;
   }, [presets]);
+
+  // Fetch Employee records to resolve the current user's role and department.
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: () => base44.entities.Employee.list().catch(() => []),
+  });
+  const currentEmployee = employees.find((e) => e.email === user?.email);
+  const canManage = currentEmployee?.role === 'manager' || currentEmployee?.role === 'admin';
   // Department managers can manage trips in their own department; admins manage all.
   const canManageTrip = (row) =>
     canManage &&
@@ -199,8 +205,8 @@ export default function Trips() {
         );
       }
     },
-    { key: 'purpose', label: 'Purpose', adminOnly: true, render: (val) => <span className="capitalize">{val || '—'}</span> },
-    { key: 'trip_number', label: 'Trip #', adminOnly: true, render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
+    { key: 'purpose', label: 'Purpose', managerOnly: true, render: (val) => <span className="capitalize">{val || '—'}</span> },
+    { key: 'trip_number', label: 'Trip #', managerOnly: true, render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
     { key: 'created_date', label: 'Date', render: (val, row) => {
       const tz = 240;
       const start = row.started_at ? moment.utc(row.started_at).utcOffset(tz) : (val ? moment.utc(val).utcOffset(tz) : null);
@@ -225,7 +231,7 @@ export default function Trips() {
               <CheckCircle2 className="w-3 h-3" /> End Trip
             </Button>
           )}
-          {isAdmin && row.status === 'completed' && row.start_lat != null && row.start_lng != null && row.end_lat != null && row.end_lng != null && (
+          {row.status === 'completed' && row.start_lat != null && row.start_lng != null && row.end_lat != null && row.end_lng != null && (
             <a
               href={`https://www.google.com/maps/dir/?api=1&origin=${row.start_lat},${row.start_lng}&destination=${row.end_lat},${row.end_lng}&travelmode=driving`}
               target="_blank"
@@ -241,7 +247,7 @@ export default function Trips() {
       )
     },
   ];
-  const columns = isAdmin ? allColumns : allColumns.filter((col) => !col.adminOnly);
+  const columns = canManage ? allColumns : allColumns.filter((col) => !col.managerOnly);
 
   if (loading) return <div className="space-y-6"><PageHeader title="Trips" /><TableSkeleton /></div>;
 
@@ -267,7 +273,7 @@ export default function Trips() {
               { value: 'created', label: 'Created' }, { value: 'in_progress', label: 'In Progress' },
               { value: 'completed', label: 'Completed' }, { value: 'acknowledged', label: 'Acknowledged' },
             ]},
-            ...(isAdmin ? [{ key: 'purpose', label: 'Purpose', options: [
+            ...(canManage ? [{ key: 'purpose', label: 'Purpose', options: [
               { value: 'official', label: 'Official' }, { value: 'personal', label: 'Personal' },
             ]}] : []),
           ]}
@@ -275,7 +281,7 @@ export default function Trips() {
           emptyTitle="No trips yet" emptyDescription="Create your first trip" emptyAction={openCreate} emptyActionLabel="Create Trip"
         />
         <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Trip' : 'Create Trip'}
-          fields={isAdmin ? fields : fields.filter((f) => f.key !== 'purpose')} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
+          fields={fields} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
         <ConfirmDialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)} onConfirm={handleDelete}
           title="Delete Trip" description="Delete this trip record?" loading={saving} />
         <EndTripDialog trip={endTripDialog} open={!!endTripDialog} onClose={() => setEndTripDialog(null)} />

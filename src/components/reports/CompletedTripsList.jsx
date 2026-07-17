@@ -11,7 +11,7 @@ function formatDuration(mins) {
   return `${h}h ${m}m`;
 }
 
-export default function CompletedTripsList({ trips, isAdmin }) {
+export default function CompletedTripsList({ trips }) {
   const completed = trips.filter((t) => t.status === 'completed');
   const tz = 240;
 
@@ -32,12 +32,10 @@ export default function CompletedTripsList({ trips, isAdmin }) {
         const end = trip.completed_at ? moment.utc(trip.completed_at).utcOffset(tz) : null;
         return (
           <div key={trip.id} className="bg-card rounded-xl border border-border p-4 space-y-3">
-            {isAdmin && (trip.trip_number || trip.purpose) && (
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{trip.trip_number || '—'}</span>
-                <span className="text-xs text-muted-foreground capitalize">{trip.purpose}</span>
-              </div>
-            )}
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{trip.trip_number || '—'}</span>
+              <span className="text-xs text-muted-foreground capitalize">{trip.purpose}</span>
+            </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm">
                 <User className="w-3.5 h-3.5 text-muted-foreground" />
