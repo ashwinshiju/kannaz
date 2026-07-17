@@ -43,6 +43,7 @@ export default function VehicleProfile() {
 
   const totalFuelCost = fuel.reduce((s, f) => s + (f.cost || 0), 0);
   const totalMaintCost = maintenance.reduce((s, m) => s + (m.cost || 0), 0);
+  const totalDistance = trips.reduce((s, t) => s + (t.distance_km || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -73,8 +74,9 @@ export default function VehicleProfile() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <KPICard title="Total Trips" value={trips.length} icon={Route} />
+        <KPICard title="Distance Travelled" value={`${totalDistance.toFixed(0)} km`} icon={Route} />
         <KPICard title="Fuel Records" value={fuel.length} icon={Fuel} subtitle={`$${totalFuelCost.toFixed(0)} total`} />
         <KPICard title="Maintenance" value={maintenance.length} icon={Wrench} subtitle={`$${totalMaintCost.toFixed(0)} total`} />
         <KPICard title="Total Cost" value={`$${(totalFuelCost + totalMaintCost).toFixed(0)}`} icon={DollarSign} />
@@ -96,6 +98,7 @@ export default function VehicleProfile() {
               { key: 'employee_name', label: 'Employee' },
               { key: 'start_location', label: 'From' },
               { key: 'end_location', label: 'To' },
+              { key: 'distance_km', label: 'Distance', render: (v) => v ? `${v.toFixed(0)} km` : '—' },
               { key: 'status', label: 'Status', render: (v) => <StatusBadge status={v} /> },
               { key: 'created_date', label: 'Date', render: (v) => v ? moment(v).format('MMM DD') : '—' },
             ]}
