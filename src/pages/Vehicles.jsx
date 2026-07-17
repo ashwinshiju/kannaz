@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Car } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import FormModal from '@/components/shared/FormModal';
@@ -51,10 +52,19 @@ export default function Vehicles() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { data = [], isLoading: loading, refetch } = useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => base44.entities.Vehicle.list(),
   });
+
+  // Fetch Employee records to resolve the current user's role and department.
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: () => base44.entities.Employee.list().catch(() => []),
+  });
+  const currentEmployee = employees.find((e) => e.email === user?.email);
+  const canManage = currentEmployee?.role === 'manager' || currentEmployee?.role === 'admin';
 
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
@@ -113,7 +123,7 @@ export default function Vehicles() {
   return (
     <PullToRefresh onRefresh={refetch}>
       <div>
-        <PageHeader title="Vehicles" subtitle={`${data.length} vehicles in fleet`} action={openCreate} actionLabel="Add Vehicle" actionIcon={Car} />
+        <PageHeader title="Vehicles" subtitle={`${data.length} vehicles in fleet`} action={canManage ? openCreate : undefined} actionLabel="Add Vehicle" actionIcon={Car} />
         <DataTable
           data={data} columns={columns} searchPlaceholder="Search vehicles..."
           filters={[
@@ -126,8 +136,8 @@ export default function Vehicles() {
               { value: 'electric', label: 'Electric' }, { value: 'hybrid', label: 'Hybrid' },
             ]},
           ]}
-          onEdit={openEdit} onDelete={setDeleteDialog} onView={(row) => navigate(`/vehicles/${row.id}`)}
-          emptyTitle="No vehicles yet" emptyAction={openCreate} emptyActionLabel="Add Vehicle"
+          onEdit={canManage ? openEdit : undefined} onDelete={canManage ? setDeleteDialog : undefined} onView={(row) => navigate(`/vehicles/${row.id}`)}
+          emptyTitle="No vehicles yet" emptyAction={canManage ? openCreate : undefined} emptyActionLabel="Add Vehicle"
         />
         <FormModal open={modalOpen} onClose={setModalOpen} title={editing ? 'Edit Vehicle' : 'Add Vehicle'}
           fields={fields} values={form} onChange={(k, v) => setForm(p => ({ ...p, [k]: v }))} onSubmit={handleSave} loading={saving} />
