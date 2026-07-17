@@ -146,5 +146,12 @@
     .scrollbar-thin {
       scrollbar-width: none;
     }
+    /* Global: hide all browser scrollbars on mobile while keeping native scrolling intact */
+    * {
+      scrollbar-width: none;
+    }
+    *::-webkit-scrollbar {
+      display: none;
+    }
   }
 }
