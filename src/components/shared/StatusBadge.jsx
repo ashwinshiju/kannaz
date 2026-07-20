@@ -15,6 +15,7 @@ const statusStyles = {
   expiring_soon: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
   warning: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
   maintenance: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+  reserved: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
   disabled: 'bg-gray-500/10 text-gray-700 dark:text-gray-400',
   inactive: 'bg-gray-500/10 text-gray-700 dark:text-gray-400',
   cancelled: 'bg-gray-500/10 text-gray-700 dark:text-gray-400',

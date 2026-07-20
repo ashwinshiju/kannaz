@@ -4,7 +4,8 @@ import { base44 } from '@/api/base44Client';
 import { GPSService, calculateDistance } from '@/services/GPSService';
 import { detectGaps, calculateGapAwareDistance, calculateDistanceMismatch, TRACKING_INTERVAL_MS } from '@/services/trackingGapAnalysis';
 import { findMatchingPreset } from '@/services/presetMatching';
-import { MapPin, Loader2, AlertTriangle } from 'lucide-react';
+import { MapPin, Loader2, AlertTriangle, Car, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ export default function EndTripDialog({ trip, open, onClose }) {
   const [odometerError, setOdometerError] = useState(null);
   const [notes, setNotes] = useState('');
   const [endPresetId, setEndPresetId] = useState(null);
+  const [postTripChoice, setPostTripChoice] = useState('');
 
   // Reset all state when the dialog opens for a new trip.
   useEffect(() => {
@@ -44,6 +46,7 @@ export default function EndTripDialog({ trip, open, onClose }) {
       setOdometerError(null);
       setNotes('');
       setEndPresetId(null);
+      setPostTripChoice('');
     }
   }, [open, trip?.id]);
 
@@ -133,6 +136,10 @@ export default function EndTripDialog({ trip, open, onClose }) {
     if (!validateOdometer(endOdometer)) return;
     if (!endLat || !endLng) {
       toast({ title: 'Please capture end GPS coordinates', variant: 'destructive' });
+      return;
+    }
+    if (!postTripChoice) {
+      toast({ title: 'Please choose what happens to the vehicle after the trip', variant: 'destructive' });
       return;
     }
 
@@ -272,7 +279,7 @@ export default function EndTripDialog({ trip, open, onClose }) {
       if (trip.vehicle_id) {
         await base44.entities.Vehicle.update(trip.vehicle_id, {
           current_odometer: endOdoNum,
-          status: 'available',
+          status: postTripChoice === 'keep' ? 'reserved' : 'available',
         });
       }
 
@@ -397,6 +404,45 @@ export default function EndTripDialog({ trip, open, onClose }) {
             />
           </div>
 
+          {/* Post-trip vehicle disposition */}
+          <div className="space-y-2">
+            <Label>
+              Vehicle after trip
+              <span className="text-destructive ml-0.5">*</span>
+            </Label>
+            <p className="text-xs text-muted-foreground">Choose what happens to this vehicle after the trip ends.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setPostTripChoice('available')}
+                className={cn(
+                  "flex flex-col items-start gap-1 p-3 rounded-lg border text-left transition-colors",
+                  postTripChoice === 'available'
+                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    : "border-border hover:bg-accent/50"
+                )}
+              >
+                <Car className="w-4 h-4 text-emerald-500" />
+                <span className="text-sm font-medium">Make available</span>
+                <span className="text-xs text-muted-foreground">Vehicle returns to the pool</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPostTripChoice('keep')}
+                className={cn(
+                  "flex flex-col items-start gap-1 p-3 rounded-lg border text-left transition-colors",
+                  postTripChoice === 'keep'
+                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    : "border-border hover:bg-accent/50"
+                )}
+              >
+                <Clock className="w-4 h-4 text-indigo-500" />
+                <span className="text-sm font-medium">Keep with me</span>
+                <span className="text-xs text-muted-foreground">Held for your next trip</span>
+              </button>
+            </div>
+          </div>
+
           {/* Live summary card — shows calculated distance once end odometer is entered */}
           {endOdometer && !odometerError && (
             <TripSummaryCard
@@ -416,7 +462,7 @@ export default function EndTripDialog({ trip, open, onClose }) {
             <Button type="button" variant="outline" onClick={() => onClose(false)}>Cancel</Button>
             <Button
               type="submit"
-              disabled={submitting || !endOdometer || !!odometerError || !endLat || !endLng}
+              disabled={submitting || !endOdometer || !!odometerError || !endLat || !endLng || !postTripChoice}
             >
               {submitting ? (
                 <>

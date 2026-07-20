@@ -19,22 +19,34 @@ export default function VehicleAvailabilityPanel() {
     queryFn: () => base44.entities.Vehicle.list(),
   });
 
-  const { data: activeTrips = [] } = useQuery({
-    queryKey: ['trips', 'active'],
+  const { data: recentTrips = [] } = useQuery({
+    queryKey: ['trips', 'recent'],
     queryFn: async () => {
       const all = await base44.entities.Trip.list('-created_date', 200);
-      return all.filter((t) => t.status === 'in_progress');
+      return all;
     },
   });
 
-  // Map vehicle_id → driver name from the active trip
+  const activeTrips = recentTrips.filter((t) => t.status === 'in_progress');
+  const completedTrips = recentTrips.filter((t) => t.status === 'completed');
+
+  // Map vehicle_id → driver name from the active trip (in-progress)
   const usageByVehicleId = {};
   activeTrips.forEach((trip) => {
     if (trip.vehicle_id) usageByVehicleId[trip.vehicle_id] = trip.employee_name || '—';
   });
 
+  // Map vehicle_id → driver name from the most recently completed trip (for reserved vehicles)
+  const reservedByVehicleId = {};
+  completedTrips.forEach((trip) => {
+    if (trip.vehicle_id && !reservedByVehicleId[trip.vehicle_id]) {
+      reservedByVehicleId[trip.vehicle_id] = trip.employee_name || '—';
+    }
+  });
+
   const inUse = vehicles.filter((v) => v.status === 'in_use' && usageByVehicleId[v.id]);
   const available = vehicles.filter((v) => v.status === 'available');
+  const reserved = vehicles.filter((v) => v.status === 'reserved');
 
   if (isLoading) {
     return (
@@ -69,6 +81,35 @@ export default function VehicleAvailabilityPanel() {
           </div>
         )}
       </div>
+
+      {/* Reserved / Held */}
+      {reserved.length > 0 && (
+        <>
+          <div className="border-t border-border" />
+          <div className="px-3 py-2">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <CircleDot className="w-3.5 h-3.5 text-indigo-500" />
+              <span className="text-xs font-semibold text-foreground">Reserved / Held</span>
+              <span className="ml-auto text-xs text-muted-foreground">{reserved.length}</span>
+            </div>
+            <div className="space-y-1">
+              {reserved.map((v) => (
+                <Link key={v.id} to="/trips" className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-accent/50 transition-colors">
+                  <Car className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium truncate">{v.name || `${v.make} ${v.model}`}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">{v.reg_no}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                    <User className="w-3 h-3" />
+                    <span className="max-w-[80px] truncate">{reservedByVehicleId[v.id] || '—'}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Currently in use */}
       {inUse.length > 0 && (

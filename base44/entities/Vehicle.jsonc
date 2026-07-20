@@ -61,7 +61,8 @@
         "available",
         "in_use",
         "maintenance",
-        "inactive"
+        "inactive",
+        "reserved"
       ],
       "default": "available",
       "title": "Status"

@@ -34,6 +34,7 @@ const fields = [
   { key: 'status', label: 'Status', type: 'select', options: [
     { value: 'available', label: 'Available' }, { value: 'in_use', label: 'In Use' },
     { value: 'maintenance', label: 'Maintenance' }, { value: 'inactive', label: 'Inactive' },
+    { value: 'reserved', label: 'Reserved' },
   ]},
 ];
 
@@ -169,6 +170,7 @@ export default function Vehicles() {
             { key: 'status', label: 'Status', options: [
               { value: 'available', label: 'Available' }, { value: 'in_use', label: 'In Use' },
               { value: 'maintenance', label: 'Maintenance' }, { value: 'inactive', label: 'Inactive' },
+              { value: 'reserved', label: 'Reserved' },
             ]},
             { key: 'fuel_type', label: 'Fuel', options: [
               { value: 'petrol', label: 'Petrol' }, { value: 'diesel', label: 'Diesel' },
