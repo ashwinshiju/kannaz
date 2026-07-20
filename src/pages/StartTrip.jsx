@@ -41,6 +41,39 @@ export default function StartTrip() {
     queryFn: () => base44.entities.Vehicle.filter({ status: 'available' }),
   });
 
+  // Fetch reserved vehicles — these may belong to the current user if they
+  // chose "Keep vehicle with me" when ending their last trip.
+  const { data: reservedVehicles = [] } = useQuery({
+    queryKey: ['vehicles', 'reserved'],
+    queryFn: () => base44.entities.Vehicle.filter({ status: 'reserved' }),
+  });
+
+  // Fetch the current user's recent completed trips to determine which
+  // reserved vehicles they held.
+  const { data: myCompletedTrips = [] } = useQuery({
+    queryKey: ['trips', 'my-completed', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      return base44.entities.Trip.filter(
+        { employee_id: user.id, status: 'completed' },
+        '-created_date',
+        50
+      );
+    },
+    enabled: !!user?.id,
+  });
+
+  // A reserved vehicle belongs to the current user if they have a completed
+  // trip referencing it. Merge it into the selectable list alongside
+  // genuinely available vehicles.
+  const myReservedVehicleIds = new Set(
+    myCompletedTrips.map((t) => t.vehicle_id).filter(Boolean)
+  );
+  const myReservedVehicles = reservedVehicles.filter((v) =>
+    myReservedVehicleIds.has(v.id)
+  );
+  const selectableVehicles = [...availableVehicles, ...myReservedVehicles];
+
   const gpsServiceRef = useRef(null);
   if (!gpsServiceRef.current) {
     gpsServiceRef.current = new GPSService();
@@ -59,9 +92,9 @@ export default function StartTrip() {
   const [gpsCapturing, setGpsCapturing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const vehicleOptions = availableVehicles.map(v => ({
+  const vehicleOptions = selectableVehicles.map(v => ({
     value: v.id,
-    label: `${v.reg_no} — ${v.make} ${v.model}`.trim(),
+    label: `${v.reg_no} — ${v.make} ${v.model}${v.status === 'reserved' ? ' (Held for you)' : ''}`.trim(),
   }));
 
   // Auto-fetch the vehicle's last known odometer reading when a vehicle is
@@ -205,7 +238,7 @@ export default function StartTrip() {
       // Stale-vehicle check: re-fetch the selected vehicle to confirm it is
       // still available between when the dropdown was loaded and now.
       const vehicle = await base44.entities.Vehicle.get(vehicleId);
-      if (vehicle.status !== 'available') {
+      if (vehicle.status !== 'available' && vehicle.status !== 'reserved') {
         toast({
           title: 'Vehicle no longer available',
           description: 'This vehicle was assigned to another trip. Please select a different vehicle.',
@@ -214,6 +247,7 @@ export default function StartTrip() {
         setVehicleId('');
         setSubmitting(false);
         queryClient.invalidateQueries({ queryKey: ['vehicles', 'available'] });
+        queryClient.invalidateQueries({ queryKey: ['vehicles', 'reserved'] });
         return;
       }
 
@@ -252,6 +286,7 @@ export default function StartTrip() {
       queryClient.invalidateQueries({ queryKey: TRIPS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: VEHICLES_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['vehicles', 'available'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles', 'reserved'] });
 
       toast({ title: 'Trip started successfully' });
       navigate('/trips');
@@ -297,7 +332,7 @@ export default function StartTrip() {
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Loading vehicles...
               </div>
-            ) : availableVehicles.length === 0 ? (
+            ) : selectableVehicles.length === 0 ? (
               <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-muted/30 text-sm text-muted-foreground">
                 <Car className="w-4 h-4" />
                 No vehicles available
@@ -416,7 +451,7 @@ export default function StartTrip() {
           {/* Submit */}
           <Button
             type="submit"
-            disabled={submitting || !vehicleId || !startLat || !startLng || availableVehicles.length === 0}
+            disabled={submitting || !vehicleId || !startLat || !startLng || selectableVehicles.length === 0}
             className="w-full"
           >
             {submitting ? (
