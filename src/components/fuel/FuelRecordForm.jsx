@@ -53,17 +53,17 @@ export default function FuelRecordForm({ open, onClose, onSubmit, loading, editi
   const handleVehicleChange = (vehicleId) => {
     const vehicle = vehicles.find(v => v.id === vehicleId);
     if (vehicle) {
-      setForm(prev => ({
-        ...prev,
+      const updates = {
         vehicle_id: vehicle.id,
         vehicle_name: vehicle.name,
         odometer: vehicle.current_odometer,
-        fuel_type: vehicle.fuel_type === 'diesel' ? 'diesel' : prev.fuel_type || '',
-      }));
+      };
+      if (vehicle.fuel_type === 'diesel') {
+        updates.fuel_type = 'diesel';
+      }
+      setForm(prev => ({ ...prev, ...updates }));
     }
   };
-
-  const selectedVehicle = vehicles.find(v => v.id === form.vehicle_id);
 
   const currentRate = fuelPrices?.[form.fuel_type] || 0;
   const litres = parseFloat(form.litres) || 0;
@@ -97,22 +97,10 @@ export default function FuelRecordForm({ open, onClose, onSubmit, loading, editi
               options={vehicleOptions}
               placeholder="Select vehicle"
             />
-            {selectedVehicle && (
-              <div className="mt-1.5 rounded-lg border border-border bg-muted/30 p-3 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-foreground">{selectedVehicle.name}</span>
-                  <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">{selectedVehicle.reg_no}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  {selectedVehicle.make && <div><span className="text-muted-foreground/70">Make:</span> {selectedVehicle.make}</div>}
-                  {selectedVehicle.model && <div><span className="text-muted-foreground/70">Model:</span> {selectedVehicle.model}</div>}
-                  {selectedVehicle.year && <div><span className="text-muted-foreground/70">Year:</span> {selectedVehicle.year}</div>}
-                  {selectedVehicle.color && <div><span className="text-muted-foreground/70">Color:</span> {selectedVehicle.color}</div>}
-                  {selectedVehicle.fuel_type && <div><span className="text-muted-foreground/70">Fuel:</span> <span className="capitalize">{selectedVehicle.fuel_type}</span></div>}
-                  {selectedVehicle.assigned_department && <div><span className="text-muted-foreground/70">Dept:</span> {selectedVehicle.assigned_department}</div>}
-                  {selectedVehicle.current_odometer != null && <div><span className="text-muted-foreground/70">Odometer:</span> {Number(selectedVehicle.current_odometer).toLocaleString()} km</div>}
-                </div>
-              </div>
+            {form.vehicle_name && (
+              <p className="text-xs text-muted-foreground">
+                Auto-filled: {form.vehicle_name}{form.odometer ? ` · Odometer: ${Number(form.odometer).toLocaleString()} km` : ''}
+              </p>
             )}
           </div>
 

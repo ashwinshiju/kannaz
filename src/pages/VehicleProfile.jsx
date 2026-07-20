@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Car, Route, Fuel, Wrench, FileText, DollarSign } from 'lucide-react';
@@ -8,7 +8,6 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import KPICard from '@/components/shared/KPICard';
 import DataTable from '@/components/shared/DataTable';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
-import { useVehicleProximityStatus } from '@/hooks/useVehicleProximityStatus';
 import moment from 'moment';
 
 export default function VehicleProfile() {
@@ -19,8 +18,6 @@ export default function VehicleProfile() {
   const [maintenance, setMaintenance] = useState([]);
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const { getEffectiveStatus } = useVehicleProximityStatus(trips);
 
   useEffect(() => {
     const load = async () => {
@@ -47,7 +44,6 @@ export default function VehicleProfile() {
   const totalFuelCost = fuel.reduce((s, f) => s + (f.cost || 0), 0);
   const totalMaintCost = maintenance.reduce((s, m) => s + (m.cost || 0), 0);
   const totalDistance = trips.reduce((s, t) => s + (t.distance_km || 0), 0);
-  const effectiveStatus = getEffectiveStatus(vehicle);
 
   return (
     <div className="space-y-6">
@@ -64,7 +60,7 @@ export default function VehicleProfile() {
           <div className="flex-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{vehicle.name}</h1>
-              <StatusBadge status={effectiveStatus} />
+              <StatusBadge status={vehicle.status} />
             </div>
             <p className="text-muted-foreground mt-1">
               {vehicle.make} {vehicle.model} {vehicle.year && `(${vehicle.year})`} • {vehicle.reg_no}

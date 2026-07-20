@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import MobileSelect from '@/components/shared/MobileSelect';
 import { useToast } from '@/components/ui/use-toast';
-import { useVehicleProximityStatus } from '@/hooks/useVehicleProximityStatus';
 
 const VEHICLES_QUERY_KEY = ['vehicles'];
 const TRIPS_QUERY_KEY = ['trips'];
@@ -36,31 +35,10 @@ export default function StartTrip() {
   const queryClient = useQueryClient();
 
   // Live query against the Vehicles entity — same entity used on the Vehicles
-  // management page (base44.entities.Vehicle). Filtered to status === 'available',
-  // then further filtered by proximity to the Skyline office.
-  const { data: rawAvailableVehicles = [], isLoading: vehiclesLoading } = useQuery({
+  // management page (base44.entities.Vehicle). Filtered to status === 'available'.
+  const { data: availableVehicles = [], isLoading: vehiclesLoading } = useQuery({
     queryKey: ['vehicles', 'available'],
     queryFn: () => base44.entities.Vehicle.filter({ status: 'available' }),
-  });
-
-  const { data: allTrips = [] } = useQuery({
-    queryKey: ['trips'],
-    queryFn: () => base44.entities.Trip.list().catch(() => []),
-  });
-
-  const { getEffectiveStatus, lastLocationByVehicle } = useVehicleProximityStatus(allTrips);
-
-  // Include vehicles that are effectively available, plus inactive vehicles
-  // (away from Skyline office) only if the current user was the last driver.
-  const availableVehicles = rawAvailableVehicles.filter((v) => {
-    const effectiveStatus = getEffectiveStatus(v);
-    if (effectiveStatus === 'available') return true;
-    if (effectiveStatus === 'inactive') {
-      const key = v.id || v.name;
-      const lastUser = lastLocationByVehicle[key]?.employee_id;
-      return !!lastUser && lastUser === user?.id;
-    }
-    return false;
   });
 
   const gpsServiceRef = useRef(null);
@@ -81,13 +59,10 @@ export default function StartTrip() {
   const [gpsCapturing, setGpsCapturing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const vehicleOptions = availableVehicles.map(v => {
-    const isInactive = getEffectiveStatus(v) === 'inactive';
-    return {
-      value: v.id,
-      label: `${v.reg_no} — ${v.make} ${v.model}${isInactive ? ' (away from office)' : ''}`.trim(),
-    };
-  });
+  const vehicleOptions = availableVehicles.map(v => ({
+    value: v.id,
+    label: `${v.reg_no} — ${v.make} ${v.model}`.trim(),
+  }));
 
   // Auto-fetch the vehicle's last known odometer reading when a vehicle is
   // selected. The chain reads from live Trip records (most recently completed
@@ -230,11 +205,7 @@ export default function StartTrip() {
       // Stale-vehicle check: re-fetch the selected vehicle to confirm it is
       // still available between when the dropdown was loaded and now.
       const vehicle = await base44.entities.Vehicle.get(vehicleId);
-      const effectiveStatus = getEffectiveStatus(vehicle);
-      const vehicleKey = vehicle.id || vehicle.name;
-      const lastUser = lastLocationByVehicle[vehicleKey]?.employee_id;
-      const canUseInactive = effectiveStatus === 'inactive' && !!lastUser && lastUser === user?.id;
-      if (effectiveStatus !== 'available' && !canUseInactive) {
+      if (vehicle.status !== 'available') {
         toast({
           title: 'Vehicle no longer available',
           description: 'This vehicle was assigned to another trip. Please select a different vehicle.',
