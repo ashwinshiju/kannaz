@@ -59,6 +59,7 @@ export default function Trips() {
     queryFn: () => base44.entities.Employee.list().catch(() => []),
   });
   const currentEmployee = employees.find((e) => e.email === user?.email);
+  const isAdmin = currentEmployee?.role === 'admin';
   const canManage = currentEmployee?.role === 'manager' || currentEmployee?.role === 'admin';
   // Department managers can manage trips in their own department; admins manage all.
   const canManageTrip = (row) =>
@@ -205,8 +206,8 @@ export default function Trips() {
         );
       }
     },
-    { key: 'purpose', label: 'Purpose', managerOnly: true, render: (val) => <span className="capitalize">{val || '—'}</span> },
-    { key: 'trip_number', label: 'Trip #', managerOnly: true, render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
+    { key: 'purpose', label: 'Purpose', adminOnly: true, render: (val) => <span className="capitalize">{val || '—'}</span> },
+    { key: 'trip_number', label: 'Trip #', adminOnly: true, render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
     { key: 'created_date', label: 'Date', render: (val, row) => {
       const tz = 240;
       const start = row.started_at ? moment.utc(row.started_at).utcOffset(tz) : (val ? moment.utc(val).utcOffset(tz) : null);
@@ -231,7 +232,7 @@ export default function Trips() {
               <CheckCircle2 className="w-3 h-3" /> End Trip
             </Button>
           )}
-          {row.status === 'completed' && row.start_lat != null && row.start_lng != null && row.end_lat != null && row.end_lng != null && (
+          {isAdmin && row.status === 'completed' && row.start_lat != null && row.start_lng != null && row.end_lat != null && row.end_lng != null && (
             <a
               href={`https://www.google.com/maps/dir/?api=1&origin=${row.start_lat},${row.start_lng}&destination=${row.end_lat},${row.end_lng}&travelmode=driving`}
               target="_blank"
@@ -247,7 +248,7 @@ export default function Trips() {
       )
     },
   ];
-  const columns = canManage ? allColumns : allColumns.filter((col) => !col.managerOnly);
+  const columns = allColumns.filter((col) => !col.adminOnly || isAdmin);
 
   if (loading) return <div className="space-y-6"><PageHeader title="Trips" /><TableSkeleton /></div>;
 
@@ -273,7 +274,7 @@ export default function Trips() {
               { value: 'created', label: 'Created' }, { value: 'in_progress', label: 'In Progress' },
               { value: 'completed', label: 'Completed' }, { value: 'acknowledged', label: 'Acknowledged' },
             ]},
-            ...(canManage ? [{ key: 'purpose', label: 'Purpose', options: [
+            ...(isAdmin ? [{ key: 'purpose', label: 'Purpose', options: [
               { value: 'official', label: 'Official' }, { value: 'personal', label: 'Personal' },
             ]}] : []),
           ]}
