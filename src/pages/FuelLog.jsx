@@ -72,6 +72,7 @@ export default function FuelLog() {
         toast({ title: 'Fuel record added' });
       }
     } catch {
+      // Rollback: restore previous cache if the base44 transaction failed
       queryClient.setQueryData(QUERY_KEY, previous);
       toast({ title: 'Failed to save fuel record', variant: 'destructive' });
     } finally {
@@ -89,6 +90,7 @@ export default function FuelLog() {
       await base44.entities.FuelRecord.delete(deleteDialog.id);
       toast({ title: 'Fuel record deleted' });
     } catch {
+      // Rollback: restore previous cache if the base44 transaction failed
       queryClient.setQueryData(QUERY_KEY, previous);
       toast({ title: 'Failed to delete fuel record', variant: 'destructive' });
     } finally {

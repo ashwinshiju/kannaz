@@ -128,6 +128,7 @@ export default function Vehicles() {
         toast({ title: 'Vehicle added' });
       }
     } catch {
+      // Rollback: restore previous cache if the base44 transaction failed
       queryClient.setQueryData(QUERY_KEY, previous);
       toast({ title: 'Failed to save vehicle', variant: 'destructive' });
     } finally {
@@ -145,6 +146,7 @@ export default function Vehicles() {
       await base44.entities.Vehicle.delete(deleteDialog.id);
       toast({ title: 'Vehicle deleted' });
     } catch {
+      // Rollback: restore previous cache if the base44 transaction failed
       queryClient.setQueryData(QUERY_KEY, previous);
       toast({ title: 'Failed to delete vehicle', variant: 'destructive' });
     } finally {
