@@ -9,6 +9,7 @@ import PresetFormModal from '@/components/locations/PresetFormModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
+import MobileSelect from '@/components/shared/MobileSelect';
 
 export const PRESET_CATEGORIES = [
   { value: 'office', label: 'Office' },
@@ -120,16 +121,11 @@ export default function PresetsSection() {
             className="pl-9"
           />
         </div>
-        <select
+        <MobileSelect
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-        >
-          <option value="all">All Categories</option>
-          {PRESET_CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
-          ))}
-        </select>
+          onValueChange={setCategoryFilter}
+          options={[{ value: 'all', label: 'All Categories' }, ...PRESET_CATEGORIES]}
+        />
         <Button onClick={openCreate} className="gap-1.5">
           <Plus className="w-4 h-4" /> Add Preset
         </Button>

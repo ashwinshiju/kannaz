@@ -14,7 +14,7 @@ const tabs = [
 
 export default function MobileBottomNav() {
   const location = useLocation();
-  const { lastTabPaths } = useTabStack();
+  const { lastTabPaths, recordPath } = useTabStack();
 
   return (
     <nav
@@ -29,7 +29,12 @@ export default function MobileBottomNav() {
         return (
           <Link
             key={tab.path}
-            to={targetPath}
+            to={isActive ? tab.path : targetPath}
+            onClick={() => {
+              if (isActive) {
+                recordPath(tab.path, tab.path);
+              }
+            }}
             className={cn(
               "flex flex-col items-center gap-1 py-2 px-2 min-w-[56px] min-h-[44px] justify-center transition-colors",
               isActive ? "text-primary" : "text-muted-foreground"
