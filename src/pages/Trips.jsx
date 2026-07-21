@@ -206,6 +206,7 @@ export default function Trips() {
         );
       }
     },
+    { key: 'distance_km', label: 'Distance', render: (val) => <span className="font-mono text-xs">{val != null ? `${Number(val).toFixed(1)} km` : '—'}</span> },
     { key: 'purpose', label: 'Purpose', adminOnly: true, render: (val) => <span className="capitalize">{val || '—'}</span> },
     { key: 'trip_number', label: 'Trip #', adminOnly: true, render: (val) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{val || '—'}</span> },
     { key: 'created_date', label: 'Date', render: (val, row) => {
