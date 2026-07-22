@@ -14,6 +14,15 @@
       "type": "string",
       "title": "Employee Name"
     },
+    "employee_ref_id": {
+      "type": "string",
+      "title": "Employee Reference ID"
+    },
+    "employee_unlinked": {
+      "type": "boolean",
+      "default": false,
+      "title": "Employee Unlinked (No Match Found)"
+    },
     "vehicle_id": {
       "type": "string",
       "title": "Vehicle ID"

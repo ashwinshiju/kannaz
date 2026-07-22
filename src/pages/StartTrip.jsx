@@ -63,6 +63,19 @@ export default function StartTrip() {
     enabled: !!user?.id,
   });
 
+  // Fetch the current user's Employee record from the /employees entity so
+  // we can store a live foreign-key reference (employee_ref_id) alongside the
+  // snapshot string fields at trip creation time.
+  const { data: currentEmployee } = useQuery({
+    queryKey: ['employee-by-email', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return null;
+      const matches = await base44.entities.Employee.filter({ email: user.email });
+      return matches[0] || null;
+    },
+    enabled: !!user?.email,
+  });
+
   // A reserved vehicle belongs to the current user if they have a completed
   // trip referencing it. Merge it into the selectable list alongside
   // genuinely available vehicles.
@@ -258,6 +271,7 @@ export default function StartTrip() {
         trip_number: tripNumber,
         employee_id: user?.id || '',
         employee_name: user?.full_name || 'Unknown',
+        employee_ref_id: currentEmployee?.id || '',
         vehicle_id: vehicle.id,
         vehicle_name: vehicle.name,
         department: vehicle.assigned_department || '',

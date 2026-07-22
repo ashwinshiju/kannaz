@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTripLocationTracking } from '@/hooks/useTripLocationTracking';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Route, Play, CheckCircle2, Clock, MapPin, Navigation } from 'lucide-react';
+import { Route, Play, CheckCircle2, Clock, MapPin, Navigation, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
@@ -59,6 +59,14 @@ export default function Trips() {
     queryFn: () => base44.entities.Employee.list().catch(() => []),
   });
   const currentEmployee = employees.find((e) => e.email === user?.email);
+  // Lookup map keyed by Employee record ID — enables live employee data
+  // lookup (role, department, contact) via the employee_ref_id foreign key
+  // on each Trip, while the snapshot employee_name remains the display default.
+  const employeeMap = useMemo(() => {
+    const m = new Map();
+    employees.forEach((e) => m.set(e.id, e));
+    return m;
+  }, [employees]);
   const isAdmin = currentEmployee?.role === 'admin';
   const canManage = currentEmployee?.role === 'manager' || currentEmployee?.role === 'admin';
   // Department managers can manage trips in their own department; admins manage all.
@@ -176,7 +184,17 @@ export default function Trips() {
 
   const allColumns = [
     { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
-    { key: 'employee_name', label: 'Employee', render: (val) => <span className="font-medium">{val}</span> },
+    { key: 'employee_name', label: 'Employee', render: (val, row) => {
+      const liveEmployee = row.employee_ref_id ? employeeMap.get(row.employee_ref_id) : null;
+      return (
+        <span className="flex items-center gap-1" title={liveEmployee ? `Current profile: ${liveEmployee.full_name} · ${liveEmployee.department || 'No department'} · ${liveEmployee.role || ''}` : undefined}>
+          <span className="font-medium">{val}</span>
+          {row.employee_unlinked && (
+            <AlertTriangle className="w-3 h-3 text-warning shrink-0" title="Employee record not found — may have been deleted" />
+          )}
+        </span>
+      );
+    }},
     { key: 'vehicle_name', label: 'Vehicle' },
     {
       key: 'start_lat', label: 'From',
