@@ -186,9 +186,10 @@ export default function Trips() {
     { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
     { key: 'employee_name', label: 'Employee', render: (val, row) => {
       const liveEmployee = row.employee_ref_id ? employeeMap.get(row.employee_ref_id) : null;
+      const displayName = liveEmployee?.full_name || val;
       return (
-        <span className="flex items-center gap-1" title={liveEmployee ? `Current profile: ${liveEmployee.full_name} · ${liveEmployee.department || 'No department'} · ${liveEmployee.role || ''}` : undefined}>
-          <span className="font-medium">{val}</span>
+        <span className="flex items-center gap-1" title={liveEmployee ? `${liveEmployee.department || 'No department'} · ${liveEmployee.role || ''}` : undefined}>
+          <span className="font-medium">{displayName}</span>
           {row.employee_unlinked && (
             <AlertTriangle className="w-3 h-3 text-warning shrink-0" title="Employee record not found — may have been deleted" />
           )}
