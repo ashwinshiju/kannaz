@@ -76,9 +76,9 @@ export default function Sidebar({ collapsed, onToggle, className }) {
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-border shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <img src={KANAZ_LOGO} alt="KANAZ" className="w-8 h-8 rounded-lg object-cover shrink-0" />
+          <img src={KANAZ_LOGO} alt="KANNAZ" className="w-8 h-8 rounded-lg object-cover shrink-0" />
           {!collapsed && (
-            <span className="font-bold text-lg tracking-tight truncate">KANAZ</span>
+            <span className="font-bold text-lg tracking-tight truncate">KANNAZ</span>
           )}
         </div>
       </div>
