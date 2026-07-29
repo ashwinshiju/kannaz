@@ -13,7 +13,9 @@ import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
 import EndTripDialog from '@/components/trips/EndTripDialog';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const VEHICLE_COLORS = { 'Rental MG': '#3b82f6', 'Hyundai Tucson': '#10b981', 'Urvan': '#ec4899' };
+const FALLBACK_COLORS = ['#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#a855f7', '#14b8a6'];
+const vehicleColorFor = (name, index) => VEHICLE_COLORS[name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -55,10 +57,14 @@ export default function Dashboard() {
   const expiringDocs = s.docs.filter(d => d.status === 'expiring_soon' || d.status === 'expired').length;
   const pendingMaint = s.maintenance.filter(m => m.status === 'scheduled').length;
 
-  const tripsByStatus = ['created', 'in_progress', 'completed', 'acknowledged', 'cancelled'].map(status => ({
-    name: status.replace(/_/g, ' '),
-    value: s.trips.filter(t => t.status === status).length
-  })).filter(d => d.value > 0);
+  const tripsByVehicle = (() => {
+    const map = {};
+    s.trips.forEach(t => {
+      const name = t.vehicle_name || 'Unknown';
+      map[name] = (map[name] || 0) + 1;
+    });
+    return Object.entries(map).map(([name, value]) => ({ name, value }));
+  })();
 
   const vehiclesByStatus = ['available', 'in_use', 'maintenance', 'inactive'].map(status => ({
     name: status.replace(/_/g, ' '),
@@ -156,16 +162,26 @@ export default function Dashboard() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChartCard title="Trips by Status" subtitle="Current distribution">
-          {tripsByStatus.length > 0 ? (
-            <ResponsiveContainer width="100%" height={240}>
-              <PieChart>
-                <Pie data={tripsByStatus} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={4} dataKey="value">
-                  {tripsByStatus.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+        <ChartCard title="Trips by Vehicle" subtitle="Distribution across fleet">
+          {tripsByVehicle.length > 0 ? (
+            <div className="flex flex-col items-center gap-3">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={tripsByVehicle} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4} dataKey="value">
+                    {tripsByVehicle.map((entry, i) => <Cell key={i} fill={vehicleColorFor(entry.name, i)} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center">
+                {tripsByVehicle.map((entry, i) => (
+                  <div key={entry.name} className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: vehicleColorFor(entry.name, i) }} />
+                    <span className="text-xs text-muted-foreground">{entry.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">No trip data yet</div>
           )}
