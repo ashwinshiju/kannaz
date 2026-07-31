@@ -25,27 +25,10 @@ export default function Settings() {
   const handleDeleteAccount = async () => {
     setDeleting(true);
     try {
-      const userId = user?.id || '';
-      const userEmail = user?.email || '';
-      const userName = user?.full_name || 'Unknown';
-
-      // Clean up all user-associated data across entities before logging out
-      await Promise.all([
-        base44.asServiceRole.entities.Trip.deleteMany({ employee_id: userId }),
-        base44.asServiceRole.entities.FuelRecord.deleteMany({ employee_id: userId }),
-        base44.asServiceRole.entities.Notification.deleteMany({ target_user_id: userId }),
-        base44.asServiceRole.entities.AuditLog.deleteMany({ user_email: userEmail }),
-      ]);
-
-      // Log the deletion action (after cleanup so it survives the AuditLog purge)
-      await base44.asServiceRole.entities.AuditLog.create({
-        user_name: userName,
-        user_email: userEmail,
-        action: 'delete',
-        module: 'Account',
-        entity_type: 'User',
-        details: 'User initiated account deletion — all associated data removed',
-      });
+      // Delegated to a backend function so the service-role calls (which bypass
+      // RLS) never run in the browser; the function validates the caller's
+      // identity server-side and scopes all deletions to the authenticated user.
+      await base44.functions.invoke('deleteMyAccount', {});
 
       toast({ title: 'Account data deleted', description: 'All your data has been permanently removed.' });
       setDeleteOpen(false);
