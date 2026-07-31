@@ -13,7 +13,7 @@ export default function PageHeader({ title, subtitle, action, actionLabel, actio
       <div className="flex items-center gap-2">
         {children}
         {action &&
-        <Button onClick={action} className="gap-2 hidden">
+        <Button onClick={action} className="gap-2">
             <Icon className="w-4 h-4" />
             {actionLabel || 'Add New'}
           </Button>
