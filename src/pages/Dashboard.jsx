@@ -55,8 +55,14 @@ export default function Dashboard() {
   const s = stats;
   const activeTrips = s.trips.filter(t => t.status === 'in_progress').length;
   const availableVehicles = s.vehicles.filter(v => v.status === 'available').length;
-  const expiringDocs = s.docs.filter(d => d.status === 'expiring_soon' || d.status === 'expired').length;
-  const pendingMaint = s.maintenance.filter(m => m.status === 'scheduled').length;
+  const now = new Date();
+  const expiringDocs = s.docs.filter(d => {
+    if (!d.expiry_date) return false;
+    const expiry = new Date(d.expiry_date);
+    const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+    return daysUntilExpiry <= 30; // expired or expiring within 30 days
+  }).length;
+  const pendingMaint = s.maintenance.filter(m => m.status === 'scheduled' || m.status === 'in_progress').length;
 
   const tripsByVehicle = (() => {
     const map = {};
