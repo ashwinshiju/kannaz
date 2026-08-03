@@ -1,14 +1,21 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 
 export default async function(req) {
+  const base44 = createClientFromRequest(req);
+
+  // Auth check must run BEFORE the try block so auth failures can't be
+  // swallowed by the catch and turned into a 500 that still exposes data.
+  let isAuthed = false;
   try {
-    const base44 = createClientFromRequest(req);
+    isAuthed = await base44.auth.isAuthenticated();
+  } catch {
+    isAuthed = false;
+  }
+  if (!isAuthed) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-    const isAuthed = await base44.auth.isAuthenticated();
-    if (!isAuthed) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+  try {
     const vehicles = await base44.asServiceRole.entities.Vehicle.list();
     const existingNotifs = await base44.asServiceRole.entities.Notification.filter({ type: 'maintenance', is_read: false });
     const maintenanceRecords = await base44.asServiceRole.entities.Maintenance.list();
