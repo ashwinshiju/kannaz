@@ -30,7 +30,7 @@ export default function Dashboard() {
   }, []);
 
   const loadStats = async () => {
-    const [employees, vehicles, locations, trips, fuel, maintenance, docs, presets] = await Promise.all([
+    const [employees, vehicles, locations, trips, fuel, maintenance, docs, presets, notifs] = await Promise.all([
       base44.entities.Employee.list().catch(() => []),
       base44.entities.Vehicle.list().catch(() => []),
       base44.entities.Location.list().catch(() => []),
@@ -39,8 +39,9 @@ export default function Dashboard() {
       base44.entities.Maintenance.list().catch(() => []),
       base44.entities.Document.list().catch(() => []),
       base44.entities.LocationPreset.list().catch(() => []),
+      base44.entities.Notification.filter({ type: 'maintenance', is_read: false }).catch(() => []),
     ]);
-    setStats({ employees, vehicles, locations, trips, fuel, maintenance, docs, presets });
+    setStats({ employees, vehicles, locations, trips, fuel, maintenance, docs, presets, notifs });
     setLoading(false);
   };
 
@@ -62,7 +63,7 @@ export default function Dashboard() {
     const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
     return daysUntilExpiry <= 30; // expired or expiring within 30 days
   }).length;
-  const pendingMaint = s.maintenance.filter(m => m.status === 'scheduled' || m.status === 'in_progress').length;
+  const pendingMaint = s.maintenance.filter(m => m.status === 'scheduled' || m.status === 'in_progress').length + (s.notifs?.length || 0);
 
   const tripsByVehicle = (() => {
     const map = {};
