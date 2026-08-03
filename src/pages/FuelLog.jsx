@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Fuel, FileText } from 'lucide-react';
+import { Fuel, FileText, Download } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import PullToRefresh from '@/components/shared/PullToRefresh';
+import { Button } from '@/components/ui/button';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import FuelRecordForm from '@/components/fuel/FuelRecordForm';
 import { useToast } from '@/components/ui/use-toast';
@@ -29,7 +30,16 @@ const columns = [
   { key: 'fuel_rate', label: 'Rate', render: (val) => val ? `AED ${Number(val).toFixed(2)}/L` : '—' },
   { key: 'cost', label: 'Cost', render: (val) => val ? `AED ${Number(val).toFixed(2)}` : '—' },
   { key: 'odometer', label: 'Odometer', render: (val) => val ? `${Number(val).toLocaleString()} km` : '—' },
-  { key: 'receipt_url', label: 'Receipt', render: (val) => val ? <a href={val} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-primary hover:underline"><FileText className="w-4 h-4" /></a> : '—' },
+  { key: 'receipt_url', label: 'Receipt', render: (val, row) => val ? (
+    <div className="flex items-center gap-1.5">
+      <a href={val} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-primary hover:underline" title="View receipt">
+        <FileText className="w-4 h-4" />
+      </a>
+      <a href={val} download={`${row.vehicle_name || 'receipt'}_${row.fuel_date || ''}.pdf`} className="inline-flex items-center text-primary hover:underline" title="Download receipt">
+        <Download className="w-4 h-4" />
+      </a>
+    </div>
+  ) : '—' },
 ];
 
 export default function FuelLog() {
@@ -52,6 +62,27 @@ export default function FuelLog() {
   const [deleteDialog, setDeleteDialog] = useState(null);
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+
+  const downloadAllReceipts = async () => {
+    const recordsWithReceipts = data.filter(r => r.receipt_url);
+    if (recordsWithReceipts.length === 0) {
+      toast({ title: 'No receipts to download', variant: 'destructive' });
+      return;
+    }
+    setDownloadingAll(true);
+    for (const rec of recordsWithReceipts) {
+      const link = document.createElement('a');
+      link.href = rec.receipt_url;
+      link.download = `${rec.vehicle_name || 'receipt'}_${rec.fuel_date || ''}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      await new Promise(r => setTimeout(r, 300));
+    }
+    setDownloadingAll(false);
+    toast({ title: `Downloaded ${recordsWithReceipts.length} receipt(s)` });
+  };
 
   const openCreate = () => { setEditing(null); setFormOpen(true); };
   const openEdit = (row) => { setEditing(row); setFormOpen(true); };
@@ -106,7 +137,12 @@ export default function FuelLog() {
   return (
     <PullToRefresh onRefresh={refetch}>
       <div>
-        <PageHeader title="Fuel Log" subtitle={`${data.length} records`} action={openCreate} actionLabel="Add Fuel Record" actionIcon={Fuel} />
+        <PageHeader title="Fuel Log" subtitle={`${data.length} records`} action={openCreate} actionLabel="Add Fuel Record" actionIcon={Fuel}>
+          <Button variant="outline" onClick={downloadAllReceipts} disabled={downloadingAll || !data.some(r => r.receipt_url)} className="gap-2">
+            <Download className="w-4 h-4" />
+            {downloadingAll ? 'Downloading...' : 'Download All Receipts'}
+          </Button>
+        </PageHeader>
         <DataTable
           data={data} columns={columns} searchPlaceholder="Search fuel records..."
           filters={[{ key: 'fuel_type', label: 'Fuel Type', options: [
