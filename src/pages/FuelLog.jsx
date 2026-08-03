@@ -30,16 +30,21 @@ const columns = [
   { key: 'fuel_rate', label: 'Rate', render: (val) => val ? `AED ${Number(val).toFixed(2)}/L` : '—' },
   { key: 'cost', label: 'Cost', render: (val) => val ? `AED ${Number(val).toFixed(2)}` : '—' },
   { key: 'odometer', label: 'Odometer', render: (val) => val ? `${Number(val).toLocaleString()} km` : '—' },
-  { key: 'receipt_url', label: 'Receipt', render: (val, row) => val ? (
-    <div className="flex items-center gap-1.5">
-      <a href={val} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-primary hover:underline" title="View receipt">
-        <FileText className="w-4 h-4" />
-      </a>
-      <a href={val} download={`${row.vehicle_name || 'receipt'}_${row.fuel_date || ''}.pdf`} className="inline-flex items-center text-primary hover:underline" title="Download receipt">
-        <Download className="w-4 h-4" />
-      </a>
-    </div>
-  ) : '—' },
+  { key: 'receipt_url', label: 'Receipt', render: (val, row) => {
+    if (!val) return '—';
+    const isSafeUrl = val.startsWith('http://') || val.startsWith('https://');
+    if (!isSafeUrl) return <span className="text-muted-foreground text-xs">Invalid</span>;
+    return (
+      <div className="flex items-center gap-1.5">
+        <a href={val} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-primary hover:underline" title="View receipt">
+          <FileText className="w-4 h-4" />
+        </a>
+        <a href={val} download={`${row.vehicle_name || 'receipt'}_${row.fuel_date || ''}.pdf`} className="inline-flex items-center text-primary hover:underline" title="Download receipt">
+          <Download className="w-4 h-4" />
+        </a>
+      </div>
+    );
+  }},
 ];
 
 export default function FuelLog() {
@@ -65,7 +70,7 @@ export default function FuelLog() {
   const [downloadingAll, setDownloadingAll] = useState(false);
 
   const downloadAllReceipts = async () => {
-    const recordsWithReceipts = data.filter(r => r.receipt_url);
+    const recordsWithReceipts = data.filter(r => r.receipt_url && (r.receipt_url.startsWith('http://') || r.receipt_url.startsWith('https://')));
     if (recordsWithReceipts.length === 0) {
       toast({ title: 'No receipts to download', variant: 'destructive' });
       return;
