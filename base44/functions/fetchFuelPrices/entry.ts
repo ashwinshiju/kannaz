@@ -1,11 +1,28 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { secrets } from 'base44:runtime';
 
 Deno.serve(async (req) => {
-  try {
-    const base44 = createClientFromRequest(req);
-    const isAuth = await base44.auth.isAuthenticated();
-    if (!isAuth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const base44 = createClientFromRequest(req);
 
+  // --- Authorization: two allowed paths ---
+  // Path 1: Shared secret (scheduled workflow has no user session)
+  // Path 2: Authenticated user (manual call from the UI)
+  let body = {};
+  try { body = await req.json(); } catch { /* not JSON — direct HTTP call */ }
+
+  const workflowSecret = secrets.get("FUEL_PRICE_SYNC_SECRET");
+  const hasValidSecret = workflowSecret && body.secret === workflowSecret;
+
+  let isAuthed = false;
+  if (!hasValidSecret) {
+    try { isAuthed = await base44.auth.isAuthenticated(); } catch { isAuthed = false; }
+  }
+
+  if (!hasValidSecret && !isAuthed) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
     // Fetch the Gulf News historical fuel rates page
     const response = await fetch('https://gulfnews.com/gold-forex/historical-fuel-rates', {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Base44FuelBot/1.0)' }
