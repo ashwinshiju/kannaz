@@ -12,6 +12,7 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
 import EndTripDialog from '@/components/trips/EndTripDialog';
+import MaintenanceAlertPopup from '@/components/maintenance/MaintenanceAlertPopup';
 
 const VEHICLE_COLORS = { 'Rental MG': '#3b82f6', 'Hyundai Tucson': '#10b981', 'Urvan': '#ec4899' };
 const FALLBACK_COLORS = ['#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#a855f7', '#14b8a6'];
@@ -250,6 +251,8 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      <MaintenanceAlertPopup />
 
       {/* End Trip dialog — opens directly from the dashboard */}
       {activeUserTrip && (
