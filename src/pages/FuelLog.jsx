@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Fuel } from 'lucide-react';
+import { Fuel, FileText } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
@@ -29,6 +29,7 @@ const columns = [
   { key: 'fuel_rate', label: 'Rate', render: (val) => val ? `AED ${Number(val).toFixed(2)}/L` : '—' },
   { key: 'cost', label: 'Cost', render: (val) => val ? `AED ${Number(val).toFixed(2)}` : '—' },
   { key: 'odometer', label: 'Odometer', render: (val) => val ? `${Number(val).toLocaleString()} km` : '—' },
+  { key: 'receipt_url', label: 'Receipt', render: (val) => val ? <a href={val} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-primary hover:underline"><FileText className="w-4 h-4" /></a> : '—' },
 ];
 
 export default function FuelLog() {

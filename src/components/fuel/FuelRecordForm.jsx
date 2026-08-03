@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import MobileSelect from '@/components/shared/MobileSelect';
+import { Upload, X, FileText } from 'lucide-react';
 
 const FUEL_TYPES = [
   { value: 'super_98', label: 'Super 98' },
@@ -21,6 +22,7 @@ export default function FuelRecordForm({ open, onClose, onSubmit, loading, editi
   const { user } = useAuth();
   const [form, setForm] = useState({});
   const [employee, setEmployee] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ['vehicles'],
@@ -68,6 +70,19 @@ export default function FuelRecordForm({ open, onClose, onSubmit, loading, editi
   const currentRate = fuelPrices?.[form.fuel_type] || 0;
   const litres = parseFloat(form.litres) || 0;
   const calculatedCost = currentRate && litres ? (currentRate * litres).toFixed(2) : 0;
+
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const result = await base44.integrations.Core.UploadFile({ file });
+      handleChange('receipt_url', result.file_url);
+    } catch {
+      // ignore upload errors silently
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -149,6 +164,35 @@ export default function FuelRecordForm({ open, onClose, onSubmit, loading, editi
           <div className="space-y-1.5">
             <Label htmlFor="station">Station</Label>
             <Input id="station" value={form.station || ''} onChange={e => handleChange('station', e.target.value)} placeholder="Fuel station name" />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Receipt / Bill</Label>
+            {form.receipt_url ? (
+              <div className="flex items-center gap-2 rounded-md border border-input p-2">
+                <FileText className="w-4 h-4 text-primary shrink-0" />
+                <a href={form.receipt_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline truncate flex-1">
+                  View uploaded receipt
+                </a>
+                <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleChange('receipt_url', '')}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <label className="flex items-center gap-2 rounded-md border border-dashed border-input p-3 cursor-pointer hover:bg-accent/50 transition-colors">
+                <Upload className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="text-sm text-muted-foreground">
+                  {uploading ? 'Uploading...' : 'Click to upload receipt'}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ''; }}
+                  disabled={uploading}
+                />
+              </label>
+            )}
           </div>
 
           <DialogFooter className="pt-4">
