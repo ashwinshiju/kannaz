@@ -68,8 +68,21 @@ export default function FuelRecordForm({ open, onClose, onSubmit, loading, editi
   };
 
   const currentRate = fuelPrices?.[form.fuel_type] || 0;
+
+  const handleLitresChange = (value) => {
+    const l = parseFloat(value) || 0;
+    const cost = currentRate && l ? (currentRate * l).toFixed(2) : '';
+    setForm(prev => ({ ...prev, litres: value, cost }));
+  };
+
+  const handleCostChange = (value) => {
+    const c = parseFloat(value) || 0;
+    const calcLitres = currentRate && c ? (c / currentRate).toFixed(2) : '';
+    setForm(prev => ({ ...prev, cost: value, litres: calcLitres }));
+  };
+
   const litres = parseFloat(form.litres) || 0;
-  const calculatedCost = currentRate && litres ? (currentRate * litres).toFixed(2) : 0;
+  const costVal = parseFloat(form.cost) || 0;
 
   const handleFileUpload = async (file) => {
     if (!file) return;
@@ -89,7 +102,7 @@ export default function FuelRecordForm({ open, onClose, onSubmit, loading, editi
     const payload = {
       ...form,
       litres,
-      cost: parseFloat(calculatedCost),
+      cost: costVal,
       fuel_rate: currentRate,
     };
     onSubmit(payload);
@@ -138,26 +151,31 @@ export default function FuelRecordForm({ open, onClose, onSubmit, loading, editi
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="litres">Litres <span className="text-destructive">*</span></Label>
+            <Label htmlFor="litres">Litres</Label>
             <Input
               id="litres"
               type="number"
               step="0.01"
               min="0"
               value={form.litres || ''}
-              onChange={e => handleChange('litres', e.target.value)}
-              placeholder="Enter litres fueled"
-              required
+              onChange={e => handleLitresChange(e.target.value)}
+              placeholder={currentRate > 0 ? 'Enter litres or cost' : 'Enter litres'}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Cost (auto-calculated)</Label>
-            <div className="h-9 flex items-center px-3 rounded-md border border-input bg-muted/50 text-sm font-medium">
-              AED {calculatedCost || '0.00'}
-            </div>
-            {currentRate > 0 && litres > 0 && (
-              <p className="text-xs text-muted-foreground">{currentRate.toFixed(2)} × {litres} L</p>
+            <Label htmlFor="cost">Cost (AED)</Label>
+            <Input
+              id="cost"
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.cost || ''}
+              onChange={e => handleCostChange(e.target.value)}
+              placeholder={currentRate > 0 ? 'Enter cost or litres' : 'Enter cost'}
+            />
+            {currentRate > 0 && (litres > 0 || costVal > 0) && (
+              <p className="text-xs text-muted-foreground">{currentRate.toFixed(2)} AED/L {litres > 0 ? `× ${litres} L` : `÷ ${costVal} AED`}</p>
             )}
           </div>
 
@@ -197,7 +215,7 @@ export default function FuelRecordForm({ open, onClose, onSubmit, loading, editi
 
           <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onClose(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading || !form.vehicle_id || !form.fuel_type || !form.litres}>
+            <Button type="submit" disabled={loading || !form.vehicle_id || !form.fuel_type || (!form.litres && !form.cost)}>
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
