@@ -11,7 +11,10 @@
         "check_maintenance": {
           "call": "invoke_backend_function",
           "with": {
-            "function_name": "checkMaintenanceDue"
+            "function_name": "checkMaintenanceDue",
+            "args": {
+              "secret": "${ secrets.MAINTENANCE_CHECK_SECRET }"
+            }
           },
           "then": "end",
           "x-base44": {

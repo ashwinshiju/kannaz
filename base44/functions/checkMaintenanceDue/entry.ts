@@ -1,17 +1,27 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { secrets } from 'base44:runtime';
 
 export default async function(req) {
   const base44 = createClientFromRequest(req);
 
-  // Auth check must run BEFORE the try block so auth failures can't be
-  // swallowed by the catch and turned into a 500 that still exposes data.
-  let isAuthed = false;
-  try {
-    isAuthed = await base44.auth.isAuthenticated();
-  } catch {
-    isAuthed = false;
+  // --- Authorization: two allowed paths ---
+  // Path 1: Shared secret (scheduled workflow has no user session)
+  // Path 2: Authenticated admin (manual call from the UI)
+  let body = {};
+  try { body = await req.json(); } catch { /* not JSON — direct HTTP call */ }
+
+  const workflowSecret = secrets.get("MAINTENANCE_CHECK_SECRET");
+  const hasValidSecret = workflowSecret && body.secret === workflowSecret;
+
+  let isAdmin = false;
+  if (!hasValidSecret) {
+    try {
+      const user = await base44.auth.me();
+      isAdmin = user?.role === 'admin';
+    } catch { isAdmin = false; }
   }
-  if (!isAuthed) {
+
+  if (!hasValidSecret && !isAdmin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
