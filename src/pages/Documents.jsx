@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { FileText } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
@@ -16,8 +16,8 @@ const docTypeLabels = {
   battery_warranty: 'Battery Warranty', emission_test: 'Emission Test', fitness_certificate: 'Fitness Certificate', other: 'Other',
 };
 
-const fields = [
-  { key: 'vehicle_name', label: 'Vehicle', required: true },
+const baseFields = [
+  { key: 'vehicle_name', label: 'Vehicle', type: 'select', required: true, options: [] },
   { key: 'doc_type', label: 'Document Type', type: 'select', required: true, options: Object.entries(docTypeLabels).map(([v, l]) => ({ value: v, label: l })) },
   { key: 'doc_number', label: 'Document Number' },
   { key: 'issuer', label: 'Issuer' },
@@ -55,10 +55,17 @@ export default function Documents() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [vehicles, setVehicles] = useState([]);
   const { toast } = useToast();
 
   const load = async () => { const items = await base44.entities.Document.list(); setData(items); setLoading(false); };
-  useEffect(() => { load(); }, []);
+  const loadVehicles = async () => { try { const list = await base44.entities.Vehicle.list(); setVehicles(list); } catch { setVehicles([]); } };
+  useEffect(() => { load(); loadVehicles(); }, []);
+
+  const fields = useMemo(() => {
+    const vehicleOptions = vehicles.map(v => ({ value: v.name, label: `${v.name} (${v.reg_no || '—'})` }));
+    return baseFields.map(f => f.key === 'vehicle_name' ? { ...f, options: vehicleOptions } : f);
+  }, [vehicles]);
 
   const openCreate = () => { setEditing(null); setForm({ status: 'valid' }); setModalOpen(true); };
   const openEdit = (row) => { setEditing(row); setForm({ ...row }); setModalOpen(true); };
@@ -66,11 +73,13 @@ export default function Documents() {
   const handleSave = async () => {
     setSaving(true);
     setModalOpen(false);
+    const selectedVehicle = vehicles.find(v => v.name === form.vehicle_name);
+    const payload = { ...form, vehicle_id: selectedVehicle?.id || form.vehicle_id };
     if (editing) {
       const previous = data;
-      setData(prev => prev.map(item => item.id === editing.id ? { ...item, ...form } : item));
+      setData(prev => prev.map(item => item.id === editing.id ? { ...item, ...payload } : item));
       try {
-        await base44.entities.Document.update(editing.id, form);
+        await base44.entities.Document.update(editing.id, payload);
         toast({ title: 'Document updated' });
       } catch {
         setData(previous);
@@ -81,9 +90,9 @@ export default function Documents() {
     } else {
       const tempId = `temp-${Date.now()}`;
       const previous = data;
-      setData(prev => [...prev, { ...form, id: tempId }]);
+      setData(prev => [...prev, { ...payload, id: tempId }]);
       try {
-        const created = await base44.entities.Document.create(form);
+        const created = await base44.entities.Document.create(payload);
         setData(prev => prev.map(item => item.id === tempId ? created : item));
         toast({ title: 'Document added' });
       } catch {
