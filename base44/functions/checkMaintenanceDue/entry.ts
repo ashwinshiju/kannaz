@@ -4,6 +4,11 @@ export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
 
+    const isAuthed = await base44.auth.isAuthenticated();
+    if (!isAuthed) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const vehicles = await base44.asServiceRole.entities.Vehicle.list();
     const existingNotifs = await base44.asServiceRole.entities.Notification.filter({ type: 'maintenance', is_read: false });
     const maintenanceRecords = await base44.asServiceRole.entities.Maintenance.list();
