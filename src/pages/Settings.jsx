@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Building2, Route, Bell, Shield, Monitor, Mail, Database, Server, Activity, Trash2, AlertTriangle } from 'lucide-react';
+import { Settings as SettingsIcon, Building2, Route, Bell, Shield, Monitor, Mail, Database, Server, Activity, Trash2, AlertTriangle, Clock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/shared/PageHeader';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import ScheduledReportsSection from '@/components/settings/ScheduledReportsSection';
 import { useToast } from '@/components/ui/use-toast';
 import { base44 } from '@/api/base44Client';
 
@@ -67,6 +68,7 @@ export default function Settings() {
           <TabsTrigger value="notifications" className="gap-1"><Bell className="w-3.5 h-3.5" /> Notifications</TabsTrigger>
           <TabsTrigger value="system" className="gap-1"><Monitor className="w-3.5 h-3.5" /> System</TabsTrigger>
           <TabsTrigger value="email" className="gap-1"><Mail className="w-3.5 h-3.5" /> Email Templates</TabsTrigger>
+          <TabsTrigger value="reports" className="gap-1"><Clock className="w-3.5 h-3.5" /> Scheduled Reports</TabsTrigger>
         </TabsList>
 
         {/* Company Profile */}
@@ -194,6 +196,11 @@ export default function Settings() {
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Scheduled Reports */}
+        <TabsContent value="reports" className="mt-4">
+          <ScheduledReportsSection />
         </TabsContent>
 
         {/* Email Templates */}
