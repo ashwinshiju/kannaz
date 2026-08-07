@@ -10,7 +10,9 @@ import DataTable from '@/components/shared/DataTable';
 import FormModal from '@/components/shared/FormModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import EndTripDialog from '@/components/trips/EndTripDialog';
+import WeeklyReportDialog from '@/components/trips/WeeklyReportDialog';
 import StatusBadge from '@/components/shared/StatusBadge';
+import { FileText } from 'lucide-react';
 import PullToRefresh from '@/components/shared/PullToRefresh';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
@@ -99,6 +101,7 @@ export default function Trips() {
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
   const [endTripDialog, setEndTripDialog] = useState(null);
+  const [reportOpen, setReportOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -281,7 +284,14 @@ export default function Trips() {
           action={activeTrip ? () => setEndTripDialog(activeTrip) : openCreate}
           actionLabel={activeTrip ? 'End Trip' : 'Create Trip'}
           actionIcon={activeTrip ? CheckCircle2 : Route}
-        />
+        >
+          {canManage && (
+            <Button variant="outline" className="gap-2" onClick={() => setReportOpen(true)}>
+              <FileText className="w-4 h-4" />
+              Weekly Report
+            </Button>
+          )}
+        </PageHeader>
         <DataTable
           data={data} columns={columns} searchPlaceholder="Search trips..."
           onRowClick={(row) => {
@@ -306,6 +316,7 @@ export default function Trips() {
         <ConfirmDialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)} onConfirm={handleDelete}
           title="Delete Trip" description="Delete this trip record?" loading={saving} />
         <EndTripDialog trip={endTripDialog} open={!!endTripDialog} onClose={() => setEndTripDialog(null)} />
+        <WeeklyReportDialog open={reportOpen} onOpenChange={setReportOpen} employees={employees} />
       </div>
     </PullToRefresh>
   );
