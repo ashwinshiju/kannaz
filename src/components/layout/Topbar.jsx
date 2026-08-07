@@ -74,7 +74,7 @@ export default function Topbar({ onMenuToggle, sidebarCollapsed }) {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 p-0">
+          <DropdownMenuContent align="end" className="w-80 p-0 border border-border shadow-lg bg-popover">
             <DropdownMenuItem asChild>
               <Link to="/trips" className="px-3 py-2 font-semibold text-sm border-b border-border block cursor-pointer active:bg-accent/50">
                 Fleet Status
