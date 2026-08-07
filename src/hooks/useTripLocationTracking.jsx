@@ -43,6 +43,10 @@ export function useTripLocationTracking() {
     if (pts.length === 0 || !tripIdRef.current) return;
 
     const point = pts[pts.length - 1];
+    // Split "spoofed" (excluded entirely) from "low-trust" (downweighted but
+    // still eligible for gap-filling / interpolation). Only genuinely spoofed
+    // points are marked is_valid=false; low-trust points remain valid so they
+    // contribute to distance calc with reduced confidence.
     const is_valid =
       point.trustScore >= TRACKING_TRUST_THRESHOLD &&
       !point.spoofed &&
@@ -63,6 +67,8 @@ export function useTripLocationTracking() {
           isMocked: point.isMocked,
           spoofed: point.spoofed,
           spoofReasons: point.spoofReasons,
+          lowTrust: point.lowTrust,
+          lowTrustReasons: point.lowTrustReasons,
           isJump: point.isJump,
           impliedSpeedKmh: point.impliedSpeedKmh,
         }),

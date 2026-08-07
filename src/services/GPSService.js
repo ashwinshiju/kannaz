@@ -121,39 +121,66 @@ export function detectGPSJump(prev, curr, maxSpeedKmh = GPS_DEFAULTS.maxRealisti
 
 /**
  * Heuristic spoofing detection across a history of processed points.
+ * Returns separate flags so a point can be "low-trust" (downweighted but
+ * still usable for gap-filling) without being "spoofed" (excluded entirely).
+ *
  * @param {Array} history — recent processed GPS points
- * @returns {{ isSpoofed: boolean, reasons: string[] }}
+ * @returns {{ isSpoofed: boolean, isLowTrust: boolean, reasons: string[], lowTrustReasons: string[] }}
  */
 export function detectSpoofing(history) {
   const reasons = [];
-  if (!history || history.length < 5) return { isSpoofed: false, reasons };
+  const lowTrustReasons = [];
+  if (!history || history.length < 5) return { isSpoofed: false, isLowTrust: false, reasons, lowTrustReasons };
 
-  // a) isMocked flag from the Geolocation API (Android)
+  // a) isMocked flag from the Geolocation API (Android) — hard spoof signal
   if (history.some((p) => p.isMocked === true)) {
     reasons.push('Geolocation API reported isMocked=true');
   }
 
-  // b) Identical accuracy repeated many times (unnaturally stable)
+  // b) Identical accuracy repeated many times.
+  // Real high-quality GPS modules (esp. on Android) report a stable accuracy
+  // value (e.g. 3.79m) when signal is strong — that's hardware behaviour, not
+  // spoofing. Only treat repetition as suspicious when:
+  //   - it persists across 10+ readings (was 5), AND
+  //   - the reported accuracy is poor (>= 5m), since tight accuracy is a sign
+  //     of a good module, not a mock feed.
   const accs = history.map((p) => p.accuracy).filter((a) => a != null);
-  if (accs.length >= 5) {
-    const allSame = accs.every((a) => a === accs[0]);
-    if (allSame && accs[0] !== 0) reasons.push('Identical accuracy value repeated across 5+ readings');
+  if (accs.length >= 10) {
+    const last10 = accs.slice(-10);
+    const allSame = last10.every((a) => a === last10[0]);
+    if (allSame && last10[0] !== 0 && last10[0] >= 5) {
+      reasons.push('Identical accuracy value repeated across 10+ readings with poor accuracy');
+    }
   }
 
-  // c) Perfect straight-line path (3+ collinear points with near-zero deviation)
-  if (history.length >= 4) {
+  // c) Straight-line path detection.
+  // Real GPS hardware produces micro-variance even on perfectly straight
+  // roads (sub-meter jitter). A genuine mock feed returns geometrically
+  // perfect collinear points with effectively zero deviation. Use a tolerance
+  // (~1e-7 in the lat/lng cross-product "area" units) that is tight enough to
+  // catch a simulated dead-straight path but loose enough to allow real-world
+  // GPS wobble on highways. Require 4+ collinear triplets to avoid a single
+  // momentary straight stretch triggering the rule.
+  if (history.length >= 5) {
+    const COLLINEAR_AREA_TOLERANCE = 1e-7;
     let collinearCount = 0;
     for (let i = 2; i < history.length; i++) {
       const a = history[i - 2], b = history[i - 1], c = history[i];
       const area = Math.abs(
         (b.lat - a.lat) * (c.lng - a.lng) - (c.lat - a.lat) * (b.lng - a.lng)
       );
-      if (area < 1e-9) collinearCount++;
+      if (area < COLLINEAR_AREA_TOLERANCE) collinearCount++;
     }
-    if (collinearCount >= 3) reasons.push('Unnaturally perfect straight-line path detected');
+    if (collinearCount >= 4) {
+      reasons.push('Unnaturally perfect straight-line path detected');
+    } else if (collinearCount >= 2) {
+      // Some straightness but not enough for a hard spoof verdict — flag as
+      // low-trust so the point is downweighted rather than discarded.
+      lowTrustReasons.push('Extended straight-line stretch with low deviation');
+    }
   }
 
-  // d) Speed exactly 0 while lat/lng still changing
+  // d) Speed exactly 0 while lat/lng still changing — hard spoof signal
   for (let i = 1; i < history.length; i++) {
     const prev = history[i - 1], curr = history[i];
     const moved = prev.lat !== curr.lat || prev.lng !== curr.lng;
@@ -164,12 +191,14 @@ export function detectSpoofing(history) {
     }
   }
 
-  return { isSpoofed: reasons.length > 0, reasons };
+  const isSpoofed = reasons.length > 0;
+  const isLowTrust = !isSpoofed && lowTrustReasons.length > 0;
+  return { isSpoofed, isLowTrust, reasons, lowTrustReasons };
 }
 
 /**
  * Compute a 0-100 trust score from accuracy, jump status, and spoof flags.
- * @param {{ accuracy?: number, isJump?: boolean, isMocked?: boolean, spoofed?: boolean, confidence?: string }} input
+ * @param {{ accuracy?: number, isJump?: boolean, isMocked?: boolean, spoofed?: boolean, lowTrust?: boolean, confidence?: string }} input
  * @returns {number}
  */
 export function computeTrustScore(input = {}, config = {}) {
@@ -196,8 +225,11 @@ export function computeTrustScore(input = {}, config = {}) {
   // Mock flag
   if (input.isMocked === true) score -= 40;
 
-  // Spoofing heuristics
+  // Spoofing heuristics — full exclusion
   if (input.spoofed) score -= 20;
+
+  // Low-trust (straight-line stretch etc.) — downweighted but not excluded
+  if (input.lowTrust) score -= 8;
 
   // Low-confidence label
   if (input.confidence === 'low') score -= 10;
@@ -318,6 +350,8 @@ export class GPSService {
     const spoof = detectSpoofing(this._history);
     point.spoofed = spoof.isSpoofed;
     point.spoofReasons = spoof.reasons;
+    point.lowTrust = spoof.isLowTrust;
+    point.lowTrustReasons = spoof.lowTrustReasons;
 
     // Trust score
     point.trustScore = computeTrustScore({
@@ -325,6 +359,7 @@ export class GPSService {
       isJump: point.isJump,
       isMocked,
       spoofed: spoof.isSpoofed,
+      lowTrust: spoof.isLowTrust,
       confidence: point.confidence,
     }, { trustPenaltyAccuracyM: this.config.trustPenaltyAccuracyM });
 
@@ -502,6 +537,8 @@ export function validateGeoPoint(history, raw, timestamp, opts = {}) {
   const spoof = detectSpoofing(historyWithPoint);
   point.spoofed = spoof.isSpoofed;
   point.spoofReasons = spoof.reasons;
+  point.lowTrust = spoof.isLowTrust;
+  point.lowTrustReasons = spoof.lowTrustReasons;
 
   // Trust score
   point.trustScore = computeTrustScore({
@@ -509,6 +546,7 @@ export function validateGeoPoint(history, raw, timestamp, opts = {}) {
     isJump: point.isJump,
     isMocked,
     spoofed: spoof.isSpoofed,
+    lowTrust: spoof.isLowTrust,
     confidence: point.confidence,
   }, { trustPenaltyAccuracyM });
 
