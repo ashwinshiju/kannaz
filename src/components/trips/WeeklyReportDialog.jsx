@@ -9,7 +9,7 @@ import { filterTripsByWeek, buildReportRows, getWeekTotals, downloadCSV, downloa
 
 const TZ = 240; // Asia/Dubai
 
-export default function WeeklyReportDialog({ open, onOpenChange, employees = [] }) {
+export default function WeeklyReportDialog({ open, onOpenChange }) {
   const [weekOffset, setWeekOffset] = useState(0); // 0 = this week
   const [generating, setGenerating] = useState(null); // 'pdf' | 'csv' | null
 
@@ -29,6 +29,12 @@ export default function WeeklyReportDialog({ open, onOpenChange, employees = [] 
   const { data: vehicles = [] } = useQuery({
     queryKey: ['vehicles'],
     queryFn: () => base44.entities.Vehicle.list().catch(() => []),
+    enabled: open,
+  });
+
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: () => base44.entities.Employee.list().catch(() => []),
     enabled: open,
   });
 

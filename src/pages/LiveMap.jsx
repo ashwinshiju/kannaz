@@ -2,18 +2,29 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Route, Gauge, MapPin, Clock, AlertTriangle, Navigation } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
+import { Route, Gauge, MapPin, Clock, AlertTriangle, Navigation, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import WeeklyReportDialog from '@/components/trips/WeeklyReportDialog';
 import { cn } from '@/lib/utils';
 import moment from 'moment';
 
 export default function LiveMap() {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const highlightTripId = searchParams.get('trip');
   const [vehicleFilter, setVehicleFilter] = useState('all');
+  const [reportOpen, setReportOpen] = useState(false);
   const highlightRef = useRef(null);
+
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: () => base44.entities.Employee.list().catch(() => []),
+  });
+  const currentEmployee = employees.find((e) => e.email === user?.email);
+  const canManage = currentEmployee?.role === 'manager' || currentEmployee?.role === 'admin';
 
   const { data: trips = [], isLoading } = useQuery({
     queryKey: ['trips', 'completed'],
@@ -83,19 +94,27 @@ export default function LiveMap() {
             Past trip summaries for all vehicles
           </p>
         </div>
-        <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
-          <SelectTrigger className="w-[200px] h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Vehicles</SelectItem>
-            {vehicles.map((v) => (
-              <SelectItem key={v.id} value={v.id}>
-                {v.name} ({v.reg_no})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          {canManage && (
+            <Button variant="outline" className="gap-2" onClick={() => setReportOpen(true)}>
+              <FileText className="w-4 h-4" />
+              Weekly Report
+            </Button>
+          )}
+          <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
+            <SelectTrigger className="w-[200px] h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Vehicles</SelectItem>
+              {vehicles.map((v) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {v.name} ({v.reg_no})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Aggregate summary */}
@@ -292,6 +311,7 @@ export default function LiveMap() {
           ))}
         </div>
       )}
+      <WeeklyReportDialog open={reportOpen} onOpenChange={setReportOpen} />
     </div>
   );
 }
