@@ -61,8 +61,7 @@ export default function ScheduledReportsSection() {
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="p-3 font-medium">Recipient</th>
-                <th className="p-3 font-medium">Type</th>
-                <th className="p-3 font-medium">Period / Report</th>
+                <th className="p-3 font-medium">Week</th>
                 <th className="p-3 font-medium whitespace-nowrap">Scheduled For</th>
                 <th className="p-3 font-medium whitespace-nowrap">Sent At</th>
                 <th className="p-3 font-medium">Status</th>
@@ -73,10 +72,7 @@ export default function ScheduledReportsSection() {
               {reports.map((r) => (
                 <tr key={r.id} className="border-b border-border/50">
                   <td className="p-3">{r.recipient_email}</td>
-                  <td className="p-3">
-                    <StatusBadge status={(r.report_type || 'trip') === 'audit' ? 'audit' : 'trip'} />
-                  </td>
-                  <td className="p-3 whitespace-nowrap">{r.report_label || r.week_label || '—'}</td>
+                  <td className="p-3 whitespace-nowrap">{r.week_label}</td>
                   <td className="p-3 whitespace-nowrap flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                     {formatDubai(r.scheduled_send_at)}

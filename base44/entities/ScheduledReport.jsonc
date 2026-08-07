@@ -7,19 +7,6 @@
       "format": "email",
       "title": "Recipient Email"
     },
-    "report_type": {
-      "type": "string",
-      "enum": [
-        "trip",
-        "audit"
-      ],
-      "default": "trip",
-      "title": "Report Type"
-    },
-    "report_label": {
-      "type": "string",
-      "title": "Report Label"
-    },
     "week_start_iso": {
       "type": "string",
       "title": "Week Start (ISO)"
@@ -58,6 +45,9 @@
   },
   "required": [
     "recipient_email",
+    "week_start_iso",
+    "week_end_iso",
+    "week_label",
     "scheduled_send_at"
   ]
 }
