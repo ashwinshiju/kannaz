@@ -30,10 +30,7 @@
         "send_reports": {
           "call": "invoke_backend_function",
           "with": {
-            "function_name": "sendScheduledReports",
-            "args": {
-              "secret": "${ secrets.REPORT_EMAIL_SECRET }"
-            }
+            "function_name": "sendScheduledReports"
           },
           "then": "end",
           "x-base44": {

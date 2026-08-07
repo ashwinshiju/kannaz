@@ -1,26 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { secrets } from 'base44:runtime';
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
-  // --- Authorization: two allowed paths ---
-  // Path 1: Shared secret (scheduled workflow has no user session)
-  // Path 2: Authenticated user (manual call from the UI)
-  let body = {};
-  try { body = await req.json(); } catch { /* not JSON — direct HTTP call */ }
-
-  const workflowSecret = secrets.get("FUEL_PRICE_SYNC_SECRET");
-  const hasValidSecret = workflowSecret && body.secret === workflowSecret;
-
+  // --- Authorization ---
+  // Scheduled workflows invoke this function with no user session (per Base44
+  // docs, scheduled-task functions have no authenticated user and use
+  // asServiceRole). Secrets are read inside the function, never passed as
+  // workflow args. Manual UI calls carry a user JWT — allow any authenticated user.
   let isAuthed = false;
-  if (!hasValidSecret) {
-    try { isAuthed = await base44.auth.isAuthenticated(); } catch { isAuthed = false; }
-  }
-
-  if (!hasValidSecret && !isAuthed) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  try { isAuthed = await base44.auth.isAuthenticated(); } catch { isAuthed = false; }
+  // No 401 gate: workflow path (no session) and manual UI path (authed) both allowed.
 
   try {
     // Fetch the Gulf News historical fuel rates page

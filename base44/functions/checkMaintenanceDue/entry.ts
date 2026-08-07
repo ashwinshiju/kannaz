@@ -1,28 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { secrets } from 'base44:runtime';
 
 export default async function(req) {
   const base44 = createClientFromRequest(req);
 
-  // --- Authorization: two allowed paths ---
-  // Path 1: Shared secret (scheduled workflow has no user session)
-  // Path 2: Authenticated admin (manual call from the UI)
-  let body = {};
-  try { body = await req.json(); } catch { /* not JSON — direct HTTP call */ }
-
-  const workflowSecret = secrets.get("MAINTENANCE_CHECK_SECRET");
-  const hasValidSecret = workflowSecret && body.secret === workflowSecret;
-
-  let isAdmin = false;
-  if (!hasValidSecret) {
-    try {
-      const user = await base44.auth.me();
-      isAdmin = user?.role === 'admin';
-    } catch { isAdmin = false; }
-  }
-
-  if (!hasValidSecret && !isAdmin) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  // --- Authorization ---
+  // Scheduled workflows invoke this function with no user session (per Base44
+  // docs, scheduled-task functions have no authenticated user and use
+  // asServiceRole). Secrets are read inside the function, never passed as
+  // workflow args. Manual UI calls carry a user JWT — require admin for those.
+  let user = null;
+  try { user = await base44.auth.me(); } catch { /* no session — workflow path */ }
+  if (user && user.role !== 'admin') {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   try {

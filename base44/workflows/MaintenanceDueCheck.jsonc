@@ -1,31 +1,6 @@
 {
-  "definition": {
-    "document": {
-      "dsl": "1.0.0",
-      "name": "maintenance_due_check",
-      "version": "1.0",
-      "namespace": "base44"
-    },
-    "do": [
-      {
-        "check_maintenance": {
-          "call": "invoke_backend_function",
-          "with": {
-            "function_name": "checkMaintenanceDue",
-            "args": {
-              "secret": "${ secrets.MAINTENANCE_CHECK_SECRET }"
-            }
-          },
-          "then": "end",
-          "x-base44": {
-            "title": "Check maintenance due",
-            "description": "Scan vehicle odometers for 10,000 km intervals"
-          }
-        }
-      }
-    ]
-  },
   "name": "Maintenance Due Check",
+  "description": "Daily check for vehicles approaching 10,000 km maintenance intervals with 500km buffer",
   "trigger": {
     "condition": null,
     "config": {
@@ -43,5 +18,27 @@
       "ends_after_count": null
     }
   },
-  "description": "Daily check for vehicles approaching 10,000 km maintenance intervals with 500km buffer"
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "maintenance_due_check",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "check_maintenance": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "checkMaintenanceDue"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Check maintenance due",
+            "description": "Scan vehicle odometers for 10,000 km intervals"
+          }
+        }
+      }
+    ]
+  }
 }

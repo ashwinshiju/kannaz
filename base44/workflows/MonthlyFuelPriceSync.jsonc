@@ -1,30 +1,6 @@
 {
-  "definition": {
-    "document": {
-      "dsl": "1.0.0",
-      "name": "monthly_fuel_price_sync",
-      "version": "1.0",
-      "namespace": "base44"
-    },
-    "do": [
-      {
-        "fetch_prices": {
-          "call": "invoke_backend_function",
-          "with": {
-            "function_name": "fetchFuelPrices",
-            "args": {
-              "secret": "${ secrets.FUEL_PRICE_SYNC_SECRET }"
-            }
-          },
-          "then": "end",
-          "x-base44": {
-            "title": "Fetch & Store Fuel Prices",
-            "description": "Scrape Gulf News fuel rates"
-          }
-        }
-      }
-    ]
-  },
+  "name": "Monthly Fuel Price Sync",
+  "description": "Scrapes UAE fuel prices (Super 98, Special 95, EPlus 91, Diesel) from Gulf News on the 1st of every month and stores them in the database",
   "trigger": {
     "condition": null,
     "config": {
@@ -42,6 +18,27 @@
       "ends_after_count": null
     }
   },
-  "description": "Scrapes UAE fuel prices (Super 98, Special 95, EPlus 91, Diesel) from Gulf News on the 1st of every month and stores them in the database",
-  "name": "Monthly Fuel Price Sync"
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "monthly_fuel_price_sync",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "fetch_prices": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "fetchFuelPrices"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Fetch & Store Fuel Prices",
+            "description": "Scrape Gulf News fuel rates"
+          }
+        }
+      }
+    ]
+  }
 }
