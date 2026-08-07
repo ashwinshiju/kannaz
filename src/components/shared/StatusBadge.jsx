@@ -21,6 +21,11 @@ const statusStyles = {
   cancelled: 'bg-gray-500/10 text-gray-700 dark:text-gray-400',
   expired: 'bg-red-500/10 text-red-700 dark:text-red-400',
   error: 'bg-red-500/10 text-red-700 dark:text-red-400',
+  failed: 'bg-red-500/10 text-red-700 dark:text-red-400',
+  pending: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  sent: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  trip: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  audit: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
 };
 
 export default function StatusBadge({ status, className }) {
