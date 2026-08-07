@@ -23,12 +23,9 @@ function getTripDuration(trip) {
   return null;
 }
 
-// Distance: use tracked_distance_km — this is the primary tracked distance
-// that already falls back to Haversine start→end when low_tracking_data is
-// true (set during trip finalization in EndTripDialog). Only falls back to
-// distance_km (odometer-based) when tracked_distance_km is absent entirely.
+// Distance: use distance_km — the odometer-based distance
+// (end_odometer − start_odometer) captured at trip end.
 function getTripDistance(trip) {
-  if (trip.tracked_distance_km != null) return trip.tracked_distance_km;
   return trip.distance_km;
 }
 
