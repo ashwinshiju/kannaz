@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FileText, Download, Loader2, Mail, Send, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Download, Loader2, Mail, Send, ChevronLeft, ChevronRight, Clock, CheckCircle2 } from 'lucide-react';
 import moment from 'moment';
 import { filterTripsByWeek, buildReportRows, getWeekTotals, downloadCSV, downloadPDF } from '@/utils/weeklyTripReport';
 import { useToast } from '@/components/ui/use-toast';
@@ -30,6 +30,10 @@ export default function TripReportDialog({ open, onOpenChange }) {
   const [generating, setGenerating] = useState(null);
   const [emailRecipient, setEmailRecipient] = useState(user?.email || '');
   const [sending, setSending] = useState(false);
+  const [scheduleMode, setScheduleMode] = useState(false);
+  const [scheduledTime, setScheduledTime] = useState('');
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduled, setScheduled] = useState(false);
 
   const { data: trips = [], isLoading } = useQuery({
     queryKey: ['trips', 'audit-report'],
@@ -119,6 +123,28 @@ export default function TripReportDialog({ open, onOpenChange }) {
       toast({ title: 'Failed to send email', variant: 'destructive' });
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleSchedule = async () => {
+    if (!emailRecipient.trim() || !scheduledTime) return;
+    setScheduling(true);
+    setScheduled(false);
+    try {
+      await base44.entities.ScheduledReport.create({
+        recipient_email: emailRecipient.trim(),
+        week_start_iso: rangeStart ? rangeStart.toISOString() : null,
+        week_end_iso: rangeEnd ? rangeEnd.toISOString() : null,
+        week_label: rangeLabel,
+        scheduled_send_at: new Date(scheduledTime).toISOString(),
+        status: 'pending',
+      });
+      setScheduled(true);
+      setScheduledTime('');
+    } catch {
+      toast({ title: 'Failed to schedule report', variant: 'destructive' });
+    } finally {
+      setScheduling(false);
     }
   };
 
@@ -274,30 +300,74 @@ export default function TripReportDialog({ open, onOpenChange }) {
           </Button>
         </div>
 
-        {/* Email */}
-        <div className="border-t border-border pt-4 space-y-2">
+        {/* Email / Schedule */}
+        <div className="border-t border-border pt-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Mail className="w-4 h-4 text-primary" />
             Email Report
           </div>
+          {/* Mode toggle */}
+          <div className="flex gap-1 rounded-lg bg-muted/50 p-1 w-fit">
+            <button
+              onClick={() => { setScheduleMode(false); setScheduled(false); }}
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${!scheduleMode ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Send now
+            </button>
+            <button
+              onClick={() => { setScheduleMode(true); setScheduled(false); }}
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${scheduleMode ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Schedule for later
+            </button>
+          </div>
+
           <div className="flex gap-2">
             <Input
               type="email"
               placeholder="recipient@company.com"
               value={emailRecipient}
-              onChange={(e) => setEmailRecipient(e.target.value)}
-              disabled={sending}
+              onChange={(e) => { setEmailRecipient(e.target.value); setScheduled(false); }}
+              disabled={sending || scheduling}
             />
-            <Button
-              variant="outline"
-              className="gap-2 shrink-0"
-              onClick={handleSendEmail}
-              disabled={sending || !emailRecipient.trim() || rows.length === 0}
-            >
-              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Send
-            </Button>
+            {scheduleMode && (
+              <Input
+                type="datetime-local"
+                value={scheduledTime}
+                min={new Date().toISOString().slice(0, 16)}
+                onChange={(e) => { setScheduledTime(e.target.value); setScheduled(false); }}
+                disabled={scheduling}
+                className="shrink-0 w-[200px]"
+              />
+            )}
+            {!scheduleMode ? (
+              <Button
+                variant="outline"
+                className="gap-2 shrink-0"
+                onClick={handleSendEmail}
+                disabled={sending || !emailRecipient.trim() || rows.length === 0}
+              >
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                Send
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="gap-2 shrink-0"
+                onClick={handleSchedule}
+                disabled={scheduling || !emailRecipient.trim() || !scheduledTime || rows.length === 0}
+              >
+                {scheduling ? <Loader2 className="w-4 h-4 animate-spin" /> : scheduled ? <CheckCircle2 className="w-4 h-4 text-success" /> : <Clock className="w-4 h-4" />}
+                {scheduled ? 'Scheduled' : 'Schedule'}
+              </Button>
+            )}
           </div>
+          {scheduleMode && scheduled && (
+            <p className="text-xs text-success flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Report scheduled — it will be emailed within 15 minutes of the chosen time.
+            </p>
+          )}
           <p className="text-xs text-muted-foreground">Recipient must be a registered Kannaz user.</p>
         </div>
       </DialogContent>
