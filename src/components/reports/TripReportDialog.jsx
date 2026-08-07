@@ -6,19 +6,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FileText, Download, Loader2, Mail, Send } from 'lucide-react';
+import { FileText, Download, Loader2, Mail, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 import moment from 'moment';
 import { filterTripsByWeek, buildReportRows, getWeekTotals, downloadCSV, downloadPDF } from '@/utils/weeklyTripReport';
 import { useToast } from '@/components/ui/use-toast';
 
 const TZ = 240; // Asia/Dubai
 
+const REPORT_TYPES = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'custom', label: 'Custom Range' },
+];
+
 export default function TripReportDialog({ open, onOpenChange }) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [reportType, setReportType] = useState('weekly');
+  const [dayDate, setDayDate] = useState(moment().utcOffset(TZ).format('YYYY-MM-DD'));
+  const [weekOffset, setWeekOffset] = useState(0);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [allTime, setAllTime] = useState(false);
   const [generating, setGenerating] = useState(null);
   const [emailRecipient, setEmailRecipient] = useState(user?.email || '');
   const [sending, setSending] = useState(false);
@@ -42,29 +50,42 @@ export default function TripReportDialog({ open, onOpenChange }) {
   const vehicleMap = useMemo(() => new Map(vehicles.map((v) => [v.id, v])), [vehicles]);
   const employeeMap = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
 
-  const rangeStart = useMemo(() => {
-    if (allTime || !startDate) return null;
-    return moment(startDate).utcOffset(TZ).startOf('day');
-  }, [allTime, startDate]);
-  const rangeEnd = useMemo(() => {
-    if (allTime || !endDate) return null;
-    return moment(endDate).utcOffset(TZ).endOf('day');
-  }, [allTime, endDate]);
+  const { rangeStart, rangeEnd, rangeLabel } = useMemo(() => {
+    if (reportType === 'daily') {
+      const base = dayDate ? moment(dayDate).utcOffset(TZ) : moment().utcOffset(TZ);
+      return {
+        rangeStart: base.clone().startOf('day'),
+        rangeEnd: base.clone().endOf('day'),
+        rangeLabel: base.format('MMM DD, YYYY'),
+      };
+    }
+    if (reportType === 'weekly') {
+      const ws = moment().utcOffset(TZ).startOf('isoWeek').add(weekOffset, 'weeks');
+      const we = ws.clone().endOf('isoWeek');
+      return {
+        rangeStart: ws,
+        rangeEnd: we,
+        rangeLabel: `${ws.format('MMM DD')} – ${we.format('MMM DD, YYYY')}`,
+      };
+    }
+    // custom
+    const rs = startDate ? moment(startDate).utcOffset(TZ).startOf('day') : null;
+    const re = endDate ? moment(endDate).utcOffset(TZ).endOf('day') : null;
+    const label = (() => {
+      const s = rs ? rs.format('MMM DD, YYYY') : 'Start';
+      const e = re ? re.format('MMM DD, YYYY') : 'Now';
+      return `${s} – ${e}`;
+    })();
+    return { rangeStart: rs, rangeEnd: re, rangeLabel: label };
+  }, [reportType, dayDate, weekOffset, startDate, endDate]);
 
   const rangeTrips = useMemo(() => {
-    if (allTime || (!rangeStart && !rangeEnd)) return trips;
+    if (!rangeStart && !rangeEnd) return trips;
     return filterTripsByWeek(trips, rangeStart || moment('2000-01-01'), rangeEnd || moment('2100-01-01'));
-  }, [trips, allTime, rangeStart, rangeEnd]);
+  }, [trips, rangeStart, rangeEnd]);
 
   const rows = useMemo(() => buildReportRows(rangeTrips, vehicleMap, employeeMap), [rangeTrips, vehicleMap, employeeMap]);
   const totals = useMemo(() => getWeekTotals(rows), [rows]);
-
-  const rangeLabel = useMemo(() => {
-    if (allTime || (!rangeStart && !rangeEnd)) return 'All Time';
-    const s = rangeStart ? rangeStart.format('MMM DD, YYYY') : 'Start';
-    const e = rangeEnd ? rangeEnd.format('MMM DD, YYYY') : 'Now';
-    return `${s} – ${e}`;
-  }, [allTime, rangeStart, rangeEnd]);
 
   const handleDownload = async (format) => {
     setGenerating(format);
@@ -101,44 +122,78 @@ export default function TripReportDialog({ open, onOpenChange }) {
     }
   };
 
+  const weeklyLabel = weekOffset === 0 ? 'This week' : weekOffset === -1 ? 'Last week' : `${weekOffset < 0 ? '' : '+'}${weekOffset} week${Math.abs(weekOffset) === 1 ? '' : 's'}`;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />
-            Trip Report
+            Report
           </DialogTitle>
           <DialogDescription>
-            Generate a trip report for any date range, or all-time.
+            Generate a trip report by day, week, or custom date range.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Date range */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="all-time"
-              checked={allTime}
-              onChange={(e) => setAllTime(e.target.checked)}
-              className="rounded"
-            />
-            <Label htmlFor="all-time" className="text-sm cursor-pointer">All time</Label>
-          </div>
-          {!allTime && (
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Start date</Label>
-                <Input type="date" value={startDate} max={endDate || undefined} onChange={(e) => setStartDate(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">End date</Label>
-                <Input type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} />
-              </div>
-            </div>
-          )}
+        {/* Report type selector */}
+        <div className="flex gap-1 rounded-lg bg-muted/50 p-1">
+          {REPORT_TYPES.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => setReportType(t.value)}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${reportType === t.value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
+
+        {/* Date picker per type */}
+        {reportType === 'daily' && (
+          <div className="grid grid-cols-1 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Date</Label>
+              <Input type="date" value={dayDate} onChange={(e) => setDayDate(e.target.value)} />
+            </div>
+          </div>
+        )}
+
+        {reportType === 'weekly' && (
+          <div>
+            <div className="flex items-center justify-between gap-2 py-1">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset((w) => w - 1)} aria-label="Previous week">
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <div className="text-center flex-1">
+                <div className="text-sm font-semibold">{rangeLabel}</div>
+                <div className="text-xs text-muted-foreground">{weeklyLabel}</div>
+              </div>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset((w) => w + 1)} aria-label="Next week">
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex justify-center -mt-1 mb-1">
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setWeekOffset(0)} disabled={weekOffset === 0}>
+                Jump to this week
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {reportType === 'custom' && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Start date</Label>
+              <Input type="date" value={startDate} max={endDate || undefined} onChange={(e) => setStartDate(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">End date</Label>
+              <Input type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} />
+            </div>
+          </div>
+        )}
 
         {/* Summary */}
         <div className="rounded-lg border border-border bg-muted/40 p-4 grid grid-cols-3 gap-2 text-center">

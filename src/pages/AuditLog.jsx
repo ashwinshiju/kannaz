@@ -53,7 +53,7 @@ export default function AuditLog() {
         title="Audit Log"
         subtitle={`${data.length} entries`}
         action={canManage ? () => setReportOpen(true) : null}
-        actionLabel="Trip Report"
+        actionLabel="Report"
         actionIcon={FileText}
       />
       <DataTable

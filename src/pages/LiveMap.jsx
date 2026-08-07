@@ -3,11 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Route, Gauge, MapPin, Clock, AlertTriangle, Navigation, FileText } from 'lucide-react';
+import { Route, Gauge, MapPin, Clock, AlertTriangle, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
-import WeeklyReportDialog from '@/components/trips/WeeklyReportDialog';
 import { cn } from '@/lib/utils';
 import moment from 'moment';
 
@@ -16,7 +15,6 @@ export default function LiveMap() {
   const [searchParams, setSearchParams] = useSearchParams();
   const highlightTripId = searchParams.get('trip');
   const [vehicleFilter, setVehicleFilter] = useState('all');
-  const [reportOpen, setReportOpen] = useState(false);
   const highlightRef = useRef(null);
 
   const { data: employees = [] } = useQuery({
@@ -95,12 +93,6 @@ export default function LiveMap() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {canManage && (
-            <Button className="gap-2" onClick={() => setReportOpen(true)}>
-              <FileText className="w-4 h-4" />
-              Weekly Report
-            </Button>
-          )}
           <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
             <SelectTrigger className="w-[200px] h-9">
               <SelectValue />
@@ -311,7 +303,6 @@ export default function LiveMap() {
           ))}
         </div>
       )}
-      <WeeklyReportDialog open={reportOpen} onOpenChange={setReportOpen} />
     </div>
   );
 }
