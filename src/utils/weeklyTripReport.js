@@ -94,7 +94,7 @@ function escapeCSV(value) {
   return s;
 }
 
-export function downloadCSV(rows, weekStart, weekEnd, totals) {
+export function downloadCSV(rows, weekStart, weekEnd, totals, filenamePrefix) {
   const header = ['Trip #', 'Employee', 'Vehicle', 'Start Date & Time', 'Duration', 'Distance (km)'];
   const lines = [header.join(',')];
   rows.forEach((r) => {
@@ -119,14 +119,14 @@ export function downloadCSV(rows, weekStart, weekEnd, totals) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `Weekly_Trip_Report_${weekStart.format('YYYY-MM-DD')}.csv`;
+  a.download = `${filenamePrefix || 'Weekly_Trip_Report'}_${weekStart.format('YYYY-MM-DD')}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-export function downloadPDF(rows, weekStart, weekEnd, totals, generatedAt) {
+export function downloadPDF(rows, weekStart, weekEnd, totals, generatedAt, rangeLabel, filenamePrefix) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -152,7 +152,8 @@ export function downloadPDF(rows, weekStart, weekEnd, totals, generatedAt) {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(110, 110, 110);
   const rangeStr = `${weekStart.format('MMM DD, YYYY')} – ${weekEnd.format('MMM DD, YYYY')}`;
-  doc.text(`Week: ${rangeStr}`, margin, 25);
+  const labelStr = rangeLabel || `Week: ${rangeStr}`;
+  doc.text(labelStr, margin, 25);
   doc.text(`Generated: ${generatedAt}`, margin, 31);
   doc.text(`${totals.count} trip(s)  •  Total distance: ${totals.distance} km  •  Total duration: ${totals.duration}`, pageWidth - margin, 31, { align: 'right' });
 
@@ -223,5 +224,5 @@ export function downloadPDF(rows, weekStart, weekEnd, totals, generatedAt) {
     x += col.width;
   });
 
-  doc.save(`Weekly_Trip_Report_${weekStart.format('YYYY-MM-DD')}.pdf`);
+  doc.save(`${filenamePrefix || 'Weekly_Trip_Report'}_${weekStart.format('YYYY-MM-DD')}.pdf`);
 }

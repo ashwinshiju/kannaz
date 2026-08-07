@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, FileText } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
+import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/shared/PageHeader';
+import TripReportDialog from '@/components/reports/TripReportDialog';
 import DataTable from '@/components/shared/DataTable';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
@@ -20,8 +24,17 @@ const columns = [
 ];
 
 export default function AuditLog() {
+  const { user } = useAuth();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reportOpen, setReportOpen] = useState(false);
+
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: () => base44.entities.Employee.list().catch(() => []),
+  });
+  const currentEmployee = employees.find((e) => e.email === user?.email);
+  const canManage = currentEmployee?.role === 'manager' || currentEmployee?.role === 'admin';
 
   const load = async () => {
     const items = await base44.entities.AuditLog.list('-created_date', 50);
@@ -36,7 +49,13 @@ export default function AuditLog() {
   return (
     <div>
       <PullToRefresh onRefresh={load}>
-      <PageHeader title="Audit Log" subtitle={`${data.length} entries`} />
+      <PageHeader
+        title="Audit Log"
+        subtitle={`${data.length} entries`}
+        action={canManage ? () => setReportOpen(true) : null}
+        actionLabel="Trip Report"
+        actionIcon={FileText}
+      />
       <DataTable
         data={data} columns={columns} searchPlaceholder="Search audit log..."
         filters={[
@@ -49,6 +68,7 @@ export default function AuditLog() {
         emptyDescription="Activity will be logged here"
       />
       </PullToRefresh>
+      {canManage && <TripReportDialog open={reportOpen} onOpenChange={setReportOpen} />}
     </div>
   );
 }
