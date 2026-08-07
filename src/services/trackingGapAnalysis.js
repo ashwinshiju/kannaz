@@ -3,49 +3,44 @@
  * point trails, calculating gap-aware distance, and flagging distance
  * discrepancies between tracked and odometer distance.
  *
+ * All tunable thresholds are read from a config object (sourced at runtime
+ * from the `gps_tracking_config` Setting record via configLoader.js). Each
+ * function accepts an optional `config` and falls back to
+ * GPS_TRACKING_DEFAULTS when a field is absent — so callers that don't pass
+ * config behave exactly as before, and the hardcoded values live in ONE
+ * place (configLoader.js).
+ *
  * Reuses GPSService's Haversine function — no new distance logic.
  */
 
 import { calculateDistance } from '@/services/GPSService';
+import { GPS_TRACKING_DEFAULTS } from '@/lib/configLoader';
 
-/** Expected interval between persisted GPS points (15 seconds). */
-export const TRACKING_INTERVAL_MS = 15_000;
+/** Expected interval between persisted GPS points (re-exported for the
+ *  adaptive-interval fallback in the tracking hook). */
+export const TRACKING_INTERVAL_MS = GPS_TRACKING_DEFAULTS.tracking_interval_ms;
 
-/** A gap is flagged when the time between consecutive points exceeds this multiplier × expected interval. */
-const GAP_THRESHOLD_MULTIPLIER = 10;
-
-/** Percentage difference threshold for flagging a distance mismatch. */
-const MISMATCH_THRESHOLD_PCT = 20;
-
-/** Segments shorter than this (meters) are treated as stationary — GPS shimmer is skipped. */
-const STATIONARY_THRESHOLD_M = 5;
-
-/** Gaps longer than this (ms) with no speed data are flagged as incomplete. Shorter gaps use straight-line Haversine. */
-const GAP_INCOMPLETE_THRESHOLD_MS = 300_000; // 5 minutes
-
-/**
- * EMA smoothing factor for GPS coordinate smoothing.
- * Used ONLY for display/map-rendering — NOT for distance calculation.
- * Distance uses raw coordinates to preserve turn/curve distance.
- */
-export const EMA_ALPHA = 0.7;
+/** EMA smoothing factor (re-exported for backwards compatibility). */
+export const EMA_ALPHA = GPS_TRACKING_DEFAULTS.ema_alpha;
 
 /**
  * Detect tracking gaps in a time-ordered series of GPS points.
  * A gap is when the time between consecutive points exceeds
- * GAP_THRESHOLD_MULTIPLIER × expectedIntervalMs.
+ * gap_threshold_multiplier × tracking_interval_ms.
  *
  * @param {Array} points — sorted by timestamp_ms ascending
- * @param {number} expectedIntervalMs
+ * @param {object} config — { tracking_interval_ms, gap_threshold_multiplier }
  * @returns {{ gaps: Array, gapSegmentStarts: Set<number> }}
  */
-export function detectGaps(points, expectedIntervalMs = TRACKING_INTERVAL_MS) {
+export function detectGaps(points, config = {}) {
   const gaps = [];
   const gapSegmentStarts = new Set();
 
   if (!points || points.length < 2) return { gaps, gapSegmentStarts };
 
-  const threshold = expectedIntervalMs * GAP_THRESHOLD_MULTIPLIER;
+  const expectedIntervalMs = config.tracking_interval_ms ?? GPS_TRACKING_DEFAULTS.tracking_interval_ms;
+  const multiplier = config.gap_threshold_multiplier ?? GPS_TRACKING_DEFAULTS.gap_threshold_multiplier;
+  const threshold = expectedIntervalMs * multiplier;
 
   for (let i = 1; i < points.length; i++) {
     const prev = points[i - 1];
@@ -89,27 +84,16 @@ function getSpeedKmh(point) {
 }
 
 /**
- * Calculate tracked distance with gap awareness.
- * - Continuous segments: sum Haversine distance between consecutive points.
- * - Gap segments: estimate distance using average speed of points before/after
- *   the gap (distance ≈ avg speed × gap duration). If no speed data is
- *   available, the gap segment is excluded from tracked distance and the trip
- *   is flagged as having incomplete tracking data.
- *
- * @param {Array} points — valid points sorted by timestamp_ms ascending
- * @param {Array} gaps — output from detectGaps()
- * @param {number} expectedIntervalMs
- * @returns {{ trackedDistanceKm: number, gapDetails: Array, hasIncompleteGaps: boolean }}
- */
-/**
  * Apply exponential moving average (EMA) smoothing to a series of GPS points.
  * Dampens the coordinate oscillation ("shimmer") that occurs when the vehicle
- * is stationary or moving at low speeds — a major cause of GPS distance
- * inflation versus the odometer.
+ * is stationary or moving at low speeds. Display/map-rendering only — NOT for
+ * distance calculation (distance uses raw coordinates to preserve turns).
  *
- * Each smoothed coordinate = prev×(1-α) + curr×α, where α = EMA_ALPHA.
+ * @param {Array} points
+ * @param {object} config — { ema_alpha }
  */
-export function smoothPoints(points) {
+export function smoothPoints(points, config = {}) {
+  const alpha = config.ema_alpha ?? GPS_TRACKING_DEFAULTS.ema_alpha;
   if (points.length < 2) return points;
   const smoothed = [{ ...points[0] }];
   for (let i = 1; i < points.length; i++) {
@@ -117,21 +101,37 @@ export function smoothPoints(points) {
     const curr = points[i];
     smoothed.push({
       ...curr,
-      latitude: prev.latitude * (1 - EMA_ALPHA) + curr.latitude * EMA_ALPHA,
-      longitude: prev.longitude * (1 - EMA_ALPHA) + curr.longitude * EMA_ALPHA,
+      latitude: prev.latitude * (1 - alpha) + curr.latitude * alpha,
+      longitude: prev.longitude * (1 - alpha) + curr.longitude * alpha,
     });
   }
   return smoothed;
 }
 
-export function calculateGapAwareDistance(points, gaps, expectedIntervalMs = TRACKING_INTERVAL_MS) {
+/**
+ * Calculate tracked distance with gap awareness.
+ * - Continuous segments: sum Haversine distance between consecutive points
+ *   (segments shorter than stationary_threshold_m are skipped).
+ * - Gap segments: estimate distance using average speed of points before/after
+ *   the gap (distance ≈ avg speed × gap duration). If no speed data is
+ *   available, straight-line Haversine is used; gaps longer than
+ *   gap_incomplete_threshold_ms are flagged incomplete.
+ *
+ * @param {Array} points — valid points sorted by timestamp_ms ascending
+ * @param {Array} gaps — output from detectGaps()
+ * @param {object} config — { stationary_threshold_m, gap_incomplete_threshold_ms }
+ * @returns {{ trackedDistanceKm: number, gapDetails: Array, hasIncompleteGaps: boolean }}
+ */
+export function calculateGapAwareDistance(points, gaps, config = {}) {
   if (!points || points.length < 2) {
     return { trackedDistanceKm: 0, gapDetails: [], hasIncompleteGaps: false };
   }
 
+  const stationaryThresholdM = config.stationary_threshold_m ?? GPS_TRACKING_DEFAULTS.stationary_threshold_m;
+  const gapIncompleteThresholdMs = config.gap_incomplete_threshold_ms ?? GPS_TRACKING_DEFAULTS.gap_incomplete_threshold_ms;
+
   // Use raw coordinates for distance calculation — EMA smoothing was pulling
   // points toward a straight line, under-counting distance on turns/curves.
-  // Smoothing is available via smoothPoints() for display/map-rendering only.
   let totalMeters = 0;
   const gapDetails = [];
   let hasIncompleteGaps = false;
@@ -162,9 +162,7 @@ export function calculateGapAwareDistance(points, gaps, expectedIntervalMs = TRA
           method: 'speed_interpolation',
         });
       } else {
-        // No speed data — use straight-line Haversine between gap endpoints
-        // rather than excluding entirely. Only flag as incomplete for very
-        // large gaps (>5 min) where straight-line would be too inaccurate.
+        // No speed data — use straight-line Haversine between gap endpoints.
         const haversineM = calculateDistance(
           prev.latitude, prev.longitude,
           curr.latitude, curr.longitude
@@ -172,7 +170,7 @@ export function calculateGapAwareDistance(points, gaps, expectedIntervalMs = TRA
         const estimatedKm = Math.round((haversineM / 1000) * 100) / 100;
         totalMeters += haversineM;
 
-        if (gap.durationMs > GAP_INCOMPLETE_THRESHOLD_MS) {
+        if (gap.durationMs > gapIncompleteThresholdMs) {
           hasIncompleteGaps = true;
         }
 
@@ -183,7 +181,7 @@ export function calculateGapAwareDistance(points, gaps, expectedIntervalMs = TRA
           durationMin: gap.durationMin,
           estimated: true,
           estimatedDistanceKm: estimatedKm,
-          method: gap.durationMs > GAP_INCOMPLETE_THRESHOLD_MS ? 'excluded_large_gap' : 'straight_line',
+          method: gap.durationMs > gapIncompleteThresholdMs ? 'excluded_large_gap' : 'straight_line',
         });
       }
     } else {
@@ -192,11 +190,7 @@ export function calculateGapAwareDistance(points, gaps, expectedIntervalMs = TRA
         prev.latitude, prev.longitude,
         curr.latitude, curr.longitude
       );
-
-      // Skip near-zero segments — vehicle is stationary (traffic light,
-      // parking). This prevents GPS shimmer from inflating distance.
-      if (segmentM < STATIONARY_THRESHOLD_M) continue;
-
+      if (segmentM < stationaryThresholdM) continue;
       totalMeters += segmentM;
     }
   }
@@ -210,14 +204,15 @@ export function calculateGapAwareDistance(points, gaps, expectedIntervalMs = TRA
 
 /**
  * Calculate the percentage difference between tracked and odometer distance.
- * Returns mismatch=true if the absolute difference exceeds the threshold.
+ * Returns mismatch=true if the absolute difference exceeds mismatch_threshold_pct.
  *
  * @param {number|null} trackedKm
  * @param {number|null} odometerKm
- * @param {number} thresholdPct
+ * @param {object} config — { mismatch_threshold_pct }
  * @returns {{ mismatch: boolean, pctDiff: number|null }}
  */
-export function calculateDistanceMismatch(trackedKm, odometerKm, thresholdPct = MISMATCH_THRESHOLD_PCT) {
+export function calculateDistanceMismatch(trackedKm, odometerKm, config = {}) {
+  const thresholdPct = config.mismatch_threshold_pct ?? GPS_TRACKING_DEFAULTS.mismatch_threshold_pct;
   if (trackedKm == null || odometerKm == null || odometerKm === 0) {
     return { mismatch: false, pctDiff: null };
   }

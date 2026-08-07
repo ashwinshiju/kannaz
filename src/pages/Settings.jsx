@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/shared/PageHeader';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import ScheduledReportsSection from '@/components/settings/ScheduledReportsSection';
+import GpsTrackingConfigSection from '@/components/settings/GpsTrackingConfigSection';
 import { useToast } from '@/components/ui/use-toast';
 import { base44 } from '@/api/base44Client';
 
@@ -195,6 +196,8 @@ export default function Settings() {
                 <Button variant="outline">View Application Logs</Button>
               </div>
             </div>
+
+            <GpsTrackingConfigSection />
           </div>
         </TabsContent>
 

@@ -20,6 +20,7 @@ import { startTripTracking, stopTripTracking } from '@/services/BackgroundLocati
 import { validateGeoPoint } from '@/services/GPSService';
 import { base44 } from '@/api/base44Client';
 import { TRACKING_INTERVAL_MS } from '@/services/trackingGapAnalysis';
+import { getGpsTrackingConfig } from '@/lib/configLoader';
 
 const TRACKING_TRUST_THRESHOLD = 30;
 const HIGH_SPEED_INTERVAL_MS = 10_000; // 10s when speed > 60 km/h
@@ -35,6 +36,7 @@ export function useTripLocationTracking() {
   const pointsRef = useRef([]);
   const intervalRef = useRef(null);
   const tripIdRef = useRef(null);
+  const gpsConfigRef = useRef({});
 
   const persistLatestPoint = useCallback(async () => {
     const pts = pointsRef.current;
@@ -78,12 +80,17 @@ export function useTripLocationTracking() {
     setPoints([]);
     tripIdRef.current = tripId;
 
+    // Fetch admin-configurable GPS thresholds once per trip start so the
+    // live validation pipeline uses current values without a redeploy.
+    gpsConfigRef.current = await getGpsTrackingConfig().catch(() => ({}));
+
     await startTripTracking(tripId, {
       onPoint: (raw) => {
         const { valid, point, errors } = validateGeoPoint(
           historyRef.current,
           raw,
-          raw.timestamp ?? Date.now()
+          raw.timestamp ?? Date.now(),
+          gpsConfigRef.current
         );
 
         // Always record the raw point in the bounded history window,

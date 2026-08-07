@@ -6,15 +6,23 @@
  */
 
 import { GeofenceMonitor } from './geofence';
+import { GPS_TRACKING_DEFAULTS } from '@/lib/configLoader';
 
+/**
+ * GPS_DEFAULTS — legacy camelCase config consumed by the GPSService class
+ * constructor and the unit tests. Derived from the single source of truth
+ * (GPS_TRACKING_DEFAULTS in configLoader.js) so no hardcoded value is
+ * duplicated. Admin overrides flow in at runtime via getGpsTrackingConfig()
+ * and are passed to the GPSService constructor / validateGeoPoint opts.
+ */
 export const GPS_DEFAULTS = {
-  maxAccuracyMeters: 100,
+  maxAccuracyMeters: GPS_TRACKING_DEFAULTS.max_accuracy_meters,
   // Highway ceiling: legitimate driving up to ~160 km/h + 20 km/h buffer
   // for GPS measurement noise. Only the raw speed ceiling is loosened —
   // spoofing detection heuristics are untouched.
-  maxRealisticSpeedKmh: 180,
+  maxRealisticSpeedKmh: GPS_TRACKING_DEFAULTS.max_realistic_speed_kmh,
   nullIslandAllowed: false,
-  watchTimeoutMs: 15000,
+  watchTimeoutMs: 15_000,
   enableHighAccuracy: true,
   exitDebounceMs: 30_000,
 };
@@ -164,14 +172,22 @@ export function detectSpoofing(history) {
  * @param {{ accuracy?: number, isJump?: boolean, isMocked?: boolean, spoofed?: boolean, confidence?: string }} input
  * @returns {number}
  */
-export function computeTrustScore(input = {}) {
+export function computeTrustScore(input = {}, config = {}) {
   let score = 100;
 
-  // Accuracy penalty
+  // Accuracy penalty — tiers are sorted descending [high, mid, low] with
+  // penalties [30, 15, 5]. The first (highest) tier the accuracy exceeds
+  // wins, preserving the original cascading if/else behaviour. Tiers are
+  // admin-configurable via the gps_tracking_config Setting record.
   if (input.accuracy != null) {
-    if (input.accuracy > 100) score -= 30;
-    else if (input.accuracy > 50) score -= 15;
-    else if (input.accuracy > 20) score -= 5;
+    const tiers = (config.trustPenaltyAccuracyM ?? GPS_TRACKING_DEFAULTS.trust_penalty_accuracy_m)
+      .map(Number)
+      .filter((n) => !Number.isNaN(n))
+      .sort((a, b) => b - a);
+    const penalties = [30, 15, 5];
+    for (let i = 0; i < tiers.length && i < penalties.length; i++) {
+      if (input.accuracy > tiers[i]) { score -= penalties[i]; break; }
+    }
   }
 
   // Jump penalty
@@ -310,7 +326,7 @@ export class GPSService {
       isMocked,
       spoofed: spoof.isSpoofed,
       confidence: point.confidence,
-    });
+    }, { trustPenaltyAccuracyM: this.config.trustPenaltyAccuracyM });
 
     // Geofence events
     const fenceEvents = this.geofence.process(point);
@@ -448,14 +464,19 @@ export class GPSService {
  * @returns {{ valid: boolean, point: object|null, errors: string[], warnings: string[] }}
  */
 export function validateGeoPoint(history, raw, timestamp, opts = {}) {
-  const config = { ...GPS_DEFAULTS, ...opts };
+  // Accepts the normalized runtime config (snake_case keys from
+  // getGpsTrackingConfig) and/or legacy camelCase GPS_DEFAULTS overrides.
+  const maxRealisticSpeedKmh = opts.max_realistic_speed_kmh ?? opts.maxRealisticSpeedKmh ?? GPS_DEFAULTS.maxRealisticSpeedKmh;
+  const maxAccuracyMeters = opts.max_accuracy_meters ?? opts.maxAccuracyMeters ?? GPS_DEFAULTS.maxAccuracyMeters;
+  const nullIslandAllowed = opts.null_island_allowed ?? opts.nullIslandAllowed ?? GPS_DEFAULTS.nullIslandAllowed;
+  const trustPenaltyAccuracyM = opts.trust_penalty_accuracy_m ?? opts.trustPenaltyAccuracyM ?? GPS_TRACKING_DEFAULTS.trust_penalty_accuracy_m;
   const lat = raw.lat;
   const lng = raw.lng;
   const accuracy = raw.accuracy ?? null;
   const isMocked = raw.isMocked ?? false;
 
   const validation = validateCoordinates(lat, lng, {
-    nullIslandAllowed: config.nullIslandAllowed,
+    nullIslandAllowed,
   });
   if (!validation.valid) {
     return { valid: false, point: null, errors: validation.errors, warnings: validation.warnings };
@@ -468,13 +489,13 @@ export function validateGeoPoint(history, raw, timestamp, opts = {}) {
   const prevValidated = prev
     ? { lat: prev.lat, lng: prev.lng, timestamp: prev.timestamp ?? timestamp - 1000 }
     : null;
-  const jump = prevValidated ? detectGPSJump(prevValidated, point, config.maxRealisticSpeedKmh) : { isJump: false, impliedSpeedKmh: 0, distanceM: 0 };
+  const jump = prevValidated ? detectGPSJump(prevValidated, point, maxRealisticSpeedKmh) : { isJump: false, impliedSpeedKmh: 0, distanceM: 0 };
   point.isJump = jump.isJump;
   point.impliedSpeedKmh = jump.impliedSpeedKmh;
   point.distanceM = jump.distanceM;
 
   // Accuracy-based confidence
-  point.confidence = accuracy != null && accuracy > config.maxAccuracyMeters ? 'low' : 'high';
+  point.confidence = accuracy != null && accuracy > maxAccuracyMeters ? 'low' : 'high';
 
   // Spoofing detection across the history window
   const historyWithPoint = [...history, point].slice(-20);
@@ -489,7 +510,7 @@ export function validateGeoPoint(history, raw, timestamp, opts = {}) {
     isMocked,
     spoofed: spoof.isSpoofed,
     confidence: point.confidence,
-  });
+  }, { trustPenaltyAccuracyM });
 
   return { valid: true, point, errors: [], warnings: validation.warnings };
 }

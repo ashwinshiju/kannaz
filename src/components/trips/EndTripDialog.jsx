@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { GPSService, calculateDistance } from '@/services/GPSService';
-import { detectGaps, calculateGapAwareDistance, calculateDistanceMismatch, TRACKING_INTERVAL_MS } from '@/services/trackingGapAnalysis';
+import { detectGaps, calculateGapAwareDistance, calculateDistanceMismatch } from '@/services/trackingGapAnalysis';
+import { getGpsTrackingConfig } from '@/lib/configLoader';
 import { findMatchingPreset } from '@/services/presetMatching';
 import { MapPin, Loader2, AlertTriangle, Car, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,7 +20,22 @@ export default function EndTripDialog({ trip, open, onClose }) {
   const queryClient = useQueryClient();
 
   const gpsServiceRef = useRef(null);
-  if (!gpsServiceRef.current) gpsServiceRef.current = new GPSService();
+  const [gpsConfig, setGpsConfig] = useState(null);
+
+  // Fetch admin-configurable GPS thresholds once on mount so the end-point
+  // capture and gap-aware distance calculation use current values.
+  useEffect(() => {
+    getGpsTrackingConfig()
+      .then((cfg) => {
+        setGpsConfig(cfg);
+        gpsServiceRef.current = new GPSService({
+          maxAccuracyMeters: cfg.max_accuracy_meters,
+          maxRealisticSpeedKmh: cfg.max_realistic_speed_kmh,
+          trustPenaltyAccuracyM: cfg.trust_penalty_accuracy_m,
+        });
+      })
+      .catch(() => setGpsConfig({}));
+  }, []);
 
   const [endOdometer, setEndOdometer] = useState('');
   const [endLat, setEndLat] = useState('');
@@ -207,13 +223,13 @@ export default function EndTripDialog({ trip, open, onClose }) {
         if (validPoints.length >= 2) {
           // Detect tracking gaps — segments where time between consecutive
           // points exceeds 2.5× the expected interval.
-          const { gaps } = detectGaps(validPoints, TRACKING_INTERVAL_MS);
+          const { gaps } = detectGaps(validPoints, gpsConfig || {});
           trackingGapCount = gaps.length;
 
           // Calculate distance with gap awareness: continuous segments use
           // Haversine; gap segments use speed interpolation when available,
           // otherwise are excluded and flagged as incomplete.
-          const result = calculateGapAwareDistance(validPoints, gaps, TRACKING_INTERVAL_MS);
+          const result = calculateGapAwareDistance(validPoints, gaps, gpsConfig || {});
           trackedDistanceKm = result.trackedDistanceKm;
           trackingGaps = result.gapDetails;
           hasIncompleteGaps = result.hasIncompleteGaps;
@@ -246,7 +262,7 @@ export default function EndTripDialog({ trip, open, onClose }) {
       }
 
       // Calculate discrepancy between tracked and odometer distance.
-      const mismatchResult = calculateDistanceMismatch(trackedDistanceKm, distance);
+      const mismatchResult = calculateDistanceMismatch(trackedDistanceKm, distance, gpsConfig || {});
 
       const updates = {
         status: 'completed',
