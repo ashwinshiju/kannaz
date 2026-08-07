@@ -64,14 +64,17 @@ export function filterTripsByWeek(trips, weekStart, weekEnd) {
 export function buildReportRows(trips, vehicleMap, employeeMap) {
   return trips.map((trip) => {
     const start = trip.started_at ? moment.utc(trip.started_at).utcOffset(TZ) : null;
+    const end = trip.completed_at ? moment.utc(trip.completed_at).utcOffset(TZ) : null;
     return {
       tripNumber: trip.trip_number || '—',
       employee: getEmployeeName(trip, employeeMap),
       vehicle: getVehicleLabel(trip, vehicleMap),
       startDateTime: start ? start.format('MMM DD, YYYY HH:mm') : '—',
+      endDateTime: end ? end.format('MMM DD, YYYY HH:mm') : '—',
       duration: formatDuration(getTripDuration(trip)),
       durationMinutes: getTripDuration(trip),
       distance: getTripDistance(trip),
+      purpose: trip.purpose || '—',
     };
   });
 }
@@ -95,7 +98,7 @@ function escapeCSV(value) {
 }
 
 export function downloadCSV(rows, weekStart, weekEnd, totals, filenamePrefix) {
-  const header = ['Trip #', 'Employee', 'Vehicle', 'Start Date & Time', 'Duration', 'Distance (km)'];
+  const header = ['Trip #', 'Employee', 'Vehicle', 'Start Date & Time', 'End Date & Time', 'Duration', 'Purpose', 'Distance (km)'];
   const lines = [header.join(',')];
   rows.forEach((r) => {
     lines.push([
@@ -103,15 +106,18 @@ export function downloadCSV(rows, weekStart, weekEnd, totals, filenamePrefix) {
       escapeCSV(r.employee),
       escapeCSV(r.vehicle),
       escapeCSV(r.startDateTime),
+      escapeCSV(r.endDateTime),
       escapeCSV(r.duration),
+      escapeCSV(r.purpose),
       r.distance != null ? Number(r.distance).toFixed(1) : '—',
     ].join(','));
   });
   lines.push('');
   lines.push([
     escapeCSV('TOTAL'),
-    '', '', '',
+    '', '', '', '',
     escapeCSV(totals.duration),
+    '',
     totals.distance,
   ].join(','));
 
@@ -134,12 +140,14 @@ export function downloadPDF(rows, weekStart, weekEnd, totals, generatedAt, range
   const tableWidth = pageWidth - margin * 2;
 
   const cols = [
-    { header: 'Trip #', width: tableWidth * 0.12 },
-    { header: 'Employee', width: tableWidth * 0.22 },
-    { header: 'Vehicle (Plate - Model)', width: tableWidth * 0.22 },
-    { header: 'Start Date & Time', width: tableWidth * 0.18 },
-    { header: 'Duration', width: tableWidth * 0.12 },
-    { header: 'Distance (km)', width: tableWidth * 0.14 },
+    { header: 'Trip #', width: tableWidth * 0.10 },
+    { header: 'Employee', width: tableWidth * 0.18 },
+    { header: 'Vehicle (Plate - Model)', width: tableWidth * 0.18 },
+    { header: 'Start Date & Time', width: tableWidth * 0.14 },
+    { header: 'End Date & Time', width: tableWidth * 0.14 },
+    { header: 'Duration', width: tableWidth * 0.10 },
+    { header: 'Purpose', width: tableWidth * 0.08 },
+    { header: 'Distance (km)', width: tableWidth * 0.08 },
   ];
 
   // Header
@@ -198,7 +206,9 @@ export function downloadPDF(rows, weekStart, weekEnd, totals, generatedAt, range
       String(r.employee),
       String(r.vehicle),
       String(r.startDateTime),
+      String(r.endDateTime),
       String(r.duration),
+      String(r.purpose),
       r.distance != null ? Number(r.distance).toFixed(1) : '—',
     ];
     cells.forEach((cell, j) => {
@@ -219,8 +229,8 @@ export function downloadPDF(rows, weekStart, weekEnd, totals, generatedAt, range
   doc.text('TOTAL', margin + 2, y + 5);
   let x = margin;
   cols.forEach((col, j) => {
-    if (j === 4) doc.text(totals.duration, x + 2, y + 5);
-    if (j === 5) doc.text(totals.distance, x + 2, y + 5);
+    if (j === 5) doc.text(totals.duration, x + 2, y + 5);
+    if (j === 7) doc.text(totals.distance, x + 2, y + 5);
     x += col.width;
   });
 

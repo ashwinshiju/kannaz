@@ -47,8 +47,10 @@ export function buildReportRows(trips, vehicleMap, employeeMap) {
       employee: empName,
       vehicle: vehicleLabel,
       start: trip.started_at,
-      distance: trip.distance_km,
+      end: trip.completed_at,
       duration: trip.duration_minutes,
+      purpose: trip.purpose || '—',
+      distance: trip.distance_km,
     };
   });
 }
@@ -61,13 +63,16 @@ export function getTotals(rows) {
 
 export function buildEmailBody(rows, rangeLabel, totalDistance, totalMinutes) {
   const rowsHtml = rows.length === 0
-    ? '<tr><td colspan="5" style="padding:12px;text-align:center;color:#888;">No trips in this period.</td></tr>'
+    ? '<tr><td colspan="8" style="padding:12px;text-align:center;color:#888;">No trips in this period.</td></tr>'
     : rows.map((r) => `
       <tr>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;font-family:monospace;">${escapeHtml(r.tripNumber)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(r.employee)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(r.vehicle)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;white-space:nowrap;">${formatDate(r.start)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;white-space:nowrap;">${formatDate(r.end)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${formatDuration(r.duration)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(r.purpose)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right;">${r.distance != null ? Number(r.distance).toFixed(1) : '—'}</td>
       </tr>`).join('');
 
@@ -82,6 +87,9 @@ export function buildEmailBody(rows, rangeLabel, totalDistance, totalMinutes) {
         <th style="padding:8px 10px;text-align:left;">Employee</th>
         <th style="padding:8px 10px;text-align:left;">Vehicle</th>
         <th style="padding:8px 10px;text-align:left;">Start</th>
+        <th style="padding:8px 10px;text-align:left;">End</th>
+        <th style="padding:8px 10px;text-align:left;">Duration</th>
+        <th style="padding:8px 10px;text-align:left;">Purpose</th>
         <th style="padding:8px 10px;text-align:right;">Distance (km)</th>
       </tr>
     </thead>

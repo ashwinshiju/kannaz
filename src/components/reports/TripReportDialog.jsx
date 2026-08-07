@@ -171,6 +171,9 @@ export default function TripReportDialog({ open, onOpenChange }) {
                   <th className="p-2 font-medium">Employee</th>
                   <th className="p-2 font-medium">Vehicle</th>
                   <th className="p-2 font-medium">Start</th>
+                  <th className="p-2 font-medium">End</th>
+                  <th className="p-2 font-medium">Duration</th>
+                  <th className="p-2 font-medium">Purpose</th>
                   <th className="p-2 font-medium text-right">Dist.</th>
                 </tr>
               </thead>
@@ -181,6 +184,9 @@ export default function TripReportDialog({ open, onOpenChange }) {
                     <td className="p-2">{r.employee}</td>
                     <td className="p-2">{r.vehicle}</td>
                     <td className="p-2 whitespace-nowrap">{r.startDateTime}</td>
+                    <td className="p-2 whitespace-nowrap">{r.endDateTime}</td>
+                    <td className="p-2 whitespace-nowrap">{r.duration}</td>
+                    <td className="p-2 capitalize">{r.purpose}</td>
                     <td className="p-2 text-right font-mono">{r.distance != null ? Number(r.distance).toFixed(1) : '—'}</td>
                   </tr>
                 ))}
