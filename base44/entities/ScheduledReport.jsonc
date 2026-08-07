@@ -1,0 +1,53 @@
+{
+  "name": "ScheduledReport",
+  "type": "object",
+  "properties": {
+    "recipient_email": {
+      "type": "string",
+      "format": "email",
+      "title": "Recipient Email"
+    },
+    "week_start_iso": {
+      "type": "string",
+      "title": "Week Start (ISO)"
+    },
+    "week_end_iso": {
+      "type": "string",
+      "title": "Week End (ISO)"
+    },
+    "week_label": {
+      "type": "string",
+      "title": "Week Label"
+    },
+    "scheduled_send_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Scheduled Send At"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "sent",
+        "failed"
+      ],
+      "default": "pending",
+      "title": "Status"
+    },
+    "sent_at": {
+      "type": "string",
+      "title": "Sent At"
+    },
+    "error_message": {
+      "type": "string",
+      "title": "Error Message"
+    }
+  },
+  "required": [
+    "recipient_email",
+    "week_start_iso",
+    "week_end_iso",
+    "week_label",
+    "scheduled_send_at"
+  ]
+}

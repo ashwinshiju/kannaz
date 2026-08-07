@@ -3,7 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, FileText, Download, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Download, Loader2, Mail, Clock, CheckCircle2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import moment from 'moment';
 import { filterTripsByWeek, buildReportRows, getWeekTotals, downloadCSV, downloadPDF } from '@/utils/weeklyTripReport';
 
@@ -12,6 +14,10 @@ const TZ = 240; // Asia/Dubai
 export default function WeeklyReportDialog({ open, onOpenChange }) {
   const [weekOffset, setWeekOffset] = useState(0); // 0 = this week
   const [generating, setGenerating] = useState(null); // 'pdf' | 'csv' | null
+  const [emailRecipient, setEmailRecipient] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduled, setScheduled] = useState(false);
 
   const weekStart = useMemo(
     () => moment().utcOffset(TZ).startOf('isoWeek').add(weekOffset, 'weeks'),
@@ -73,6 +79,27 @@ export default function WeeklyReportDialog({ open, onOpenChange }) {
       }
     } finally {
       setGenerating(null);
+    }
+  };
+
+  const handleSchedule = async () => {
+    if (!emailRecipient.trim() || !scheduledTime) return;
+    setScheduling(true);
+    setScheduled(false);
+    try {
+      await base44.entities.ScheduledReport.create({
+        recipient_email: emailRecipient.trim(),
+        week_start_iso: weekStart.toISOString(),
+        week_end_iso: weekEnd.toISOString(),
+        week_label: rangeLabel,
+        scheduled_send_at: new Date(scheduledTime).toISOString(),
+        status: 'pending',
+      });
+      setScheduled(true);
+      setEmailRecipient('');
+      setScheduledTime('');
+    } finally {
+      setScheduling(false);
     }
   };
 
@@ -191,6 +218,56 @@ export default function WeeklyReportDialog({ open, onOpenChange }) {
           >
             {generating === 'csv' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             Download CSV
+          </Button>
+        </div>
+
+        {/* Schedule Email */}
+        <div className="border-t border-border pt-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Mail className="w-4 h-4 text-primary" />
+            Schedule Email
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Send this report to a registered app user at a chosen time. Emails can only be delivered to registered Kannaz users.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="report-email" className="text-xs">Recipient email</Label>
+              <Input
+                id="report-email"
+                type="email"
+                placeholder="name@company.com"
+                value={emailRecipient}
+                onChange={(e) => { setEmailRecipient(e.target.value); setScheduled(false); }}
+                disabled={scheduling}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="report-time" className="text-xs">Send at</Label>
+              <Input
+                id="report-time"
+                type="datetime-local"
+                value={scheduledTime}
+                min={new Date().toISOString().slice(0, 16)}
+                onChange={(e) => { setScheduledTime(e.target.value); setScheduled(false); }}
+                disabled={scheduling}
+              />
+            </div>
+          </div>
+          {scheduled && (
+            <p className="text-xs text-success flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Report scheduled — it will be emailed within 15 minutes of the chosen time.
+            </p>
+          )}
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            onClick={handleSchedule}
+            disabled={scheduling || !emailRecipient.trim() || !scheduledTime || rows.length === 0}
+          >
+            {scheduling ? <Loader2 className="w-4 h-4 animate-spin" /> : scheduled ? <CheckCircle2 className="w-4 h-4 text-success" /> : <Clock className="w-4 h-4" />}
+            {scheduled ? 'Email Scheduled' : 'Schedule Email'}
           </Button>
         </div>
       </DialogContent>

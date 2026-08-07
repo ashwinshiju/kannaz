@@ -1,0 +1,47 @@
+{
+  "name": "Scheduled Report Email",
+  "description": "Processes pending scheduled weekly trip report emails every 15 minutes",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/15 * * * *",
+      "one_time_date": null,
+      "timezone": "Asia/Dubai",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "scheduled_report_email",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_reports": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sendScheduledReports",
+            "args": {
+              "secret": "${ secrets.REPORT_EMAIL_SECRET }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send scheduled reports",
+            "description": "Process due report emails"
+          }
+        }
+      }
+    ]
+  }
+}
