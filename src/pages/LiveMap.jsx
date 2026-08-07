@@ -96,7 +96,7 @@ export default function LiveMap() {
         </div>
         <div className="flex items-center gap-2">
           {canManage && (
-            <Button variant="outline" className="gap-2" onClick={() => setReportOpen(true)}>
+            <Button className="gap-2" onClick={() => setReportOpen(true)}>
               <FileText className="w-4 h-4" />
               Weekly Report
             </Button>
