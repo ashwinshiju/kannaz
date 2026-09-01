@@ -169,7 +169,7 @@ export default function LiveMap() {
               ref={trip.id === highlightTripId ? highlightRef : undefined}
               onClick={clearHighlight}
               className={cn(
-                "rounded-lg border bg-card p-4 space-y-3 transition-all",
+                "rounded-lg border bg-card p-3 space-y-2 transition-all",
                 trip.id === highlightTripId
                   ? "border-primary ring-2 ring-primary shadow-lg"
                   : "border-border active:bg-muted/30 cursor-default",
