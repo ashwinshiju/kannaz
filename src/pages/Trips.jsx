@@ -29,6 +29,7 @@ const fields = [
     { value: 'official', label: 'Official' }, { value: 'personal', label: 'Personal' }, { value: 'maintenance', label: 'Maintenance' },
   ]},
   { key: 'start_odometer', label: 'Start Odometer', type: 'number' },
+  { key: 'end_odometer', label: 'End Odometer', type: 'number' },
   { key: 'notes', label: 'Notes', type: 'textarea' },
 ];
 
