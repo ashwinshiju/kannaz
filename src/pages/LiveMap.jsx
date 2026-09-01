@@ -283,6 +283,12 @@ export default function LiveMap() {
                   </div>
                 )}
               </div>
+              {trip.notes && (
+                <div className="border-t border-border pt-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Remark</p>
+                  <p className="text-sm text-foreground whitespace-pre-wrap break-words">{trip.notes}</p>
+                </div>
+              )}
               {trip.end_trust_score != null && (
                 <p className="text-xs text-muted-foreground">
                   GPS Trust Score: {trip.end_trust_score}/100
