@@ -94,6 +94,28 @@ export default function Dashboard() {
     return months;
   })();
 
+  // Available vehicles per month — a vehicle counts as "available" in a month
+  // if it was not used on any trip during that month.
+  const monthlyAvailableVehicles = (() => {
+    const total = s.vehicles.length;
+    const months = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleString('default', { month: 'short' });
+      const usedIds = new Set();
+      s.trips.forEach(t => {
+        const td = new Date(t.started_at || t.created_date);
+        if (td.getFullYear() === d.getFullYear() && td.getMonth() === d.getMonth()) {
+          usedIds.add(t.vehicle_id || t.vehicle_name);
+        }
+      });
+      const used = [...usedIds].filter(Boolean).length;
+      months.push({ name: label, available: Math.max(0, total - used) });
+    }
+    return months;
+  })();
+
   const recentTrips = [...s.trips].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 5);
   const presetMap = new Map((s.presets || []).map(p => [p.id, p]));
   const activeUserTrip = currentUser
@@ -170,29 +192,16 @@ export default function Dashboard() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChartCard title="Trips by Vehicle" subtitle="Distribution across fleet">
-          {tripsByVehicle.length > 0 ? (
-            <div className="flex flex-col items-center gap-3">
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={tripsByVehicle} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4} dataKey="value">
-                    {tripsByVehicle.map((entry, i) => <Cell key={i} fill={vehicleColorFor(entry.name, i)} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center">
-                {tripsByVehicle.map((entry, i) => (
-                  <div key={entry.name} className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: vehicleColorFor(entry.name, i) }} />
-                    <span className="text-xs text-muted-foreground">{entry.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">No trip data yet</div>
-          )}
+        <ChartCard title="Available Vehicles per Month" subtitle="Vehicles not used on any trip (last 6 months)">
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={monthlyAvailableVehicles}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="name" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+              <YAxis allowDecimals={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+              <Tooltip />
+              <Bar dataKey="available" name="Available" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </ChartCard>
         <ChartCard title="Monthly Vehicle Trips" subtitle="Trips per month (last 6 months)">
           <ResponsiveContainer width="100%" height={240}>
