@@ -11,6 +11,7 @@ import ChartCard from '@/components/shared/ChartCard';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EndTripDialog from '@/components/trips/EndTripDialog';
 import MaintenanceAlertPopup from '@/components/maintenance/MaintenanceAlertPopup';
 
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [endTripOpen, setEndTripOpen] = useState(false);
+  const [pieMonthOffset, setPieMonthOffset] = useState(0); // 0 = current month
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -65,14 +67,24 @@ export default function Dashboard() {
   }).length;
   const pendingMaint = s.maintenance.filter(m => m.status === 'scheduled' || m.status === 'in_progress').length + (s.notifs?.length || 0);
 
+  const availableVehicleIds = new Set(s.vehicles.filter(v => v.status === 'available').map(v => v.name));
+  const pieMonthDate = new Date(now.getFullYear(), now.getMonth() - pieMonthOffset, 1);
+  const pieMonthLabel = pieMonthDate.toLocaleString('default', { month: 'short', year: '2-digit' });
   const tripsByVehicle = (() => {
     const map = {};
     s.trips.forEach(t => {
       const name = t.vehicle_name || 'Unknown';
+      if (!availableVehicleIds.has(name)) return;
+      const td = new Date(t.started_at || t.created_date);
+      if (td.getFullYear() !== pieMonthDate.getFullYear() || td.getMonth() !== pieMonthDate.getMonth()) return;
       map[name] = (map[name] || 0) + 1;
     });
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   })();
+  const pieMonthOptions = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    return { offset: i, label: d.toLocaleString('default', { month: 'short', year: '2-digit' }) };
+  });
 
   const vehiclesByStatus = ['available', 'in_use', 'maintenance', 'inactive'].map(status => ({
     name: status.replace(/_/g, ' '),
@@ -170,7 +182,14 @@ export default function Dashboard() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChartCard title="Trips by Vehicle" subtitle="Distribution across fleet">
+        <ChartCard title="Trips by Available Vehicle" subtitle={`Distribution for ${pieMonthLabel}`} action={
+          <Select value={String(pieMonthOffset)} onValueChange={v => setPieMonthOffset(Number(v))}>
+            <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {pieMonthOptions.map(o => <SelectItem key={o.offset} value={String(o.offset)}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        }>
           {tripsByVehicle.length > 0 ? (
             <div className="flex flex-col items-center gap-3">
               <ResponsiveContainer width="100%" height={200}>
