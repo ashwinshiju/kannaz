@@ -11,6 +11,7 @@ import ChartCard from '@/components/shared/ChartCard';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import EndTripDialog from '@/components/trips/EndTripDialog';
 import MaintenanceAlertPopup from '@/components/maintenance/MaintenanceAlertPopup';
 
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [endTripOpen, setEndTripOpen] = useState(false);
+  const [pieMonth, setPieMonth] = useState(-1); // -1 = current month offset (last of 6)
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -65,13 +67,27 @@ export default function Dashboard() {
   }).length;
   const pendingMaint = s.maintenance.filter(m => m.status === 'scheduled' || m.status === 'in_progress').length + (s.notifs?.length || 0);
 
+  const pieMonths = (() => {
+    const arr = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      arr.push({ offset: i, label: d.toLocaleString('default', { month: 'short', year: '2-digit' }) });
+    }
+    return arr;
+  })();
+  const selectedPieMonth = pieMonths.find(m => m.offset === pieMonth) || pieMonths[pieMonths.length - 1];
+  const selectedPieDate = new Date(now.getFullYear(), now.getMonth() - selectedPieMonth.offset, 1);
+  const activeVehicleNames = new Set(s.vehicles.filter(v => v.status !== 'inactive').map(v => v.name));
   const tripsByVehicle = (() => {
     const map = {};
     s.trips.forEach(t => {
       const name = t.vehicle_name || 'Unknown';
+      if (!activeVehicleNames.has(name)) return;
+      const td = new Date(t.started_at || t.created_date);
+      if (td.getFullYear() !== selectedPieDate.getFullYear() || td.getMonth() !== selectedPieDate.getMonth()) return;
       map[name] = (map[name] || 0) + 1;
     });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
+    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   })();
 
   const vehiclesByStatus = ['available', 'in_use', 'maintenance', 'inactive'].map(status => ({
@@ -170,7 +186,14 @@ export default function Dashboard() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChartCard title="Trips by Vehicle" subtitle="Distribution across fleet">
+        <ChartCard title="Trips by Vehicle" subtitle="Active vehicles only (excludes inactive)" action={
+          <Select value={String(pieMonth)} onValueChange={(v) => setPieMonth(Number(v))}>
+            <SelectTrigger className="w-[120px] h-8"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {pieMonths.map(m => <SelectItem key={m.offset} value={String(m.offset)}>{m.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        }>
           {tripsByVehicle.length > 0 ? (
             <div className="flex flex-col items-center gap-3">
               <ResponsiveContainer width="100%" height={200}>
@@ -191,7 +214,7 @@ export default function Dashboard() {
               </div>
             </div>
           ) : (
-            <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">No trip data yet</div>
+            <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">No trips for {selectedPieMonth.label}</div>
           )}
         </ChartCard>
         <ChartCard title="Monthly Vehicle Trips" subtitle="Trips per month (last 6 months)">
