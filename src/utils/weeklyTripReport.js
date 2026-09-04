@@ -89,6 +89,20 @@ export function getWeekTotals(rows) {
   };
 }
 
+// Per-person summary: total trips and total distance for each employee
+// in the (already filtered) report rows.
+export function getEmployeeDistanceTotals(rows) {
+  const map = new Map();
+  rows.forEach((r) => {
+    const name = r.employee || '—';
+    const entry = map.get(name) || { name, trips: 0, distance: 0 };
+    entry.trips += 1;
+    entry.distance += Number(r.distance) || 0;
+    map.set(name, entry);
+  });
+  return [...map.values()].sort((a, b) => b.distance - a.distance);
+}
+
 function escapeCSV(value) {
   const s = String(value ?? '');
   if (s.includes(',') || s.includes('"') || s.includes('\n')) {
@@ -97,7 +111,7 @@ function escapeCSV(value) {
   return s;
 }
 
-export function downloadCSV(rows, weekStart, weekEnd, totals, filenamePrefix) {
+export function downloadCSV(rows, weekStart, weekEnd, totals, filenamePrefix, personTotals) {
   const header = ['Trip #', 'Employee', 'Vehicle', 'Start Date & Time', 'End Date & Time', 'Duration', 'Purpose', 'Distance (km)'];
   const lines = [header.join(',')];
   rows.forEach((r) => {
@@ -121,6 +135,15 @@ export function downloadCSV(rows, weekStart, weekEnd, totals, filenamePrefix) {
     totals.distance,
   ].join(','));
 
+  if (personTotals && personTotals.length) {
+    lines.push('');
+    lines.push(escapeCSV('Total distance per person'));
+    lines.push(['Employee', 'Trips', 'Distance (km)'].join(','));
+    personTotals.forEach((p) => {
+      lines.push([escapeCSV(p.name), p.trips, p.distance.toFixed(1)].join(','));
+    });
+  }
+
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -132,7 +155,7 @@ export function downloadCSV(rows, weekStart, weekEnd, totals, filenamePrefix) {
   URL.revokeObjectURL(url);
 }
 
-export function downloadPDF(rows, weekStart, weekEnd, totals, generatedAt, rangeLabel, filenamePrefix) {
+export function downloadPDF(rows, weekStart, weekEnd, totals, generatedAt, rangeLabel, filenamePrefix, personTotals) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -233,6 +256,25 @@ export function downloadPDF(rows, weekStart, weekEnd, totals, generatedAt, range
     if (j === 7) doc.text(totals.distance, x + 2, y + 5);
     x += col.width;
   });
+
+  // Per-person distance summary
+  if (personTotals && personTotals.length) {
+    y += 10;
+    if (y > pageHeight - 15) { doc.addPage(); y = 20; }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(40, 40, 40);
+    doc.text('Total distance per person', margin, y);
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(70, 70, 70);
+    personTotals.forEach((p) => {
+      if (y > pageHeight - 15) { doc.addPage(); y = 20; }
+      doc.text(`${p.name}: ${p.trips} trip(s) - ${p.distance.toFixed(1)} km`, margin + 2, y);
+      y += 5.5;
+    });
+  }
 
   doc.save(`${filenamePrefix || 'Weekly_Trip_Report'}_${weekStart.format('YYYY-MM-DD')}.pdf`);
 }

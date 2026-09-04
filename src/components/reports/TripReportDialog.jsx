@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FileText, Download, Loader2, Mail, Send, ChevronLeft, ChevronRight, Clock, CheckCircle2 } from 'lucide-react';
 import moment from 'moment';
-import { filterTripsByWeek, buildReportRows, getWeekTotals, downloadCSV, downloadPDF } from '@/utils/weeklyTripReport';
+import { filterTripsByWeek, buildReportRows, getWeekTotals, getEmployeeDistanceTotals, downloadCSV, downloadPDF } from '@/utils/weeklyTripReport';
 import { useToast } from '@/components/ui/use-toast';
 
 const TZ = 240; // Asia/Dubai
@@ -34,6 +34,7 @@ export default function TripReportDialog({ open, onOpenChange }) {
   const [scheduledTime, setScheduledTime] = useState('');
   const [scheduling, setScheduling] = useState(false);
   const [scheduled, setScheduled] = useState(false);
+  const [selectedEmpIds, setSelectedEmpIds] = useState([]);
 
   const { data: trips = [], isLoading } = useQuery({
     queryKey: ['trips', 'audit-report'],
@@ -88,8 +89,26 @@ export default function TripReportDialog({ open, onOpenChange }) {
     return filterTripsByWeek(trips, rangeStart || moment('2000-01-01'), rangeEnd || moment('2100-01-01'));
   }, [trips, rangeStart, rangeEnd]);
 
-  const rows = useMemo(() => buildReportRows(rangeTrips, vehicleMap, employeeMap), [rangeTrips, vehicleMap, employeeMap]);
+  // Employee filter (custom range only) — generates a combined report for
+  // the selected people (e.g. Binil + Joemon).
+  const empFilterActive = reportType === 'custom' && selectedEmpIds.length > 0;
+  const filteredTrips = useMemo(() => {
+    if (!empFilterActive) return rangeTrips;
+    const ids = new Set(selectedEmpIds);
+    const names = new Set(employees.filter((e) => ids.has(e.id)).map((e) => e.full_name));
+    return rangeTrips.filter((t) => {
+      const live = t.employee_ref_id ? employeeMap.get(t.employee_ref_id) : null;
+      if (live) return ids.has(live.id);
+      return names.has(t.employee_name || '');
+    });
+  }, [rangeTrips, empFilterActive, selectedEmpIds, employees, employeeMap]);
+
+  const rows = useMemo(() => buildReportRows(filteredTrips, vehicleMap, employeeMap), [filteredTrips, vehicleMap, employeeMap]);
   const totals = useMemo(() => getWeekTotals(rows), [rows]);
+  const personTotals = useMemo(
+    () => (reportType === 'custom' ? getEmployeeDistanceTotals(rows) : []),
+    [reportType, rows]
+  );
 
   const handleDownload = async (format) => {
     setGenerating(format);
@@ -98,10 +117,15 @@ export default function TripReportDialog({ open, onOpenChange }) {
       const generatedAt = moment().utcOffset(TZ).format('MMM DD, YYYY HH:mm');
       const labelStart = rangeStart || moment('2000-01-01');
       const labelEnd = rangeEnd || moment();
+      const selectedNames = employees
+        .filter((e) => selectedEmpIds.includes(e.id))
+        .map((e) => e.full_name.split(' ')[0]);
+      const filename = empFilterActive ? `Trip_Report_${selectedNames.join('_')}` : 'Trip_Report';
+      const exportPersonTotals = reportType === 'custom' ? personTotals : null;
       if (format === 'pdf') {
-        downloadPDF(rows, labelStart, labelEnd, totals, generatedAt, `Period: ${rangeLabel}`, 'Trip_Report');
+        downloadPDF(rows, labelStart, labelEnd, totals, generatedAt, `Period: ${rangeLabel}`, filename, exportPersonTotals);
       } else {
-        downloadCSV(rows, labelStart, labelEnd, totals, 'Trip_Report');
+        downloadCSV(rows, labelStart, labelEnd, totals, filename, exportPersonTotals);
       }
     } finally {
       setGenerating(null);
@@ -209,16 +233,38 @@ export default function TripReportDialog({ open, onOpenChange }) {
         )}
 
         {reportType === 'custom' && (
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs">Start date</Label>
-              <Input type="date" value={startDate} max={endDate || undefined} onChange={(e) => setStartDate(e.target.value)} />
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Start date</Label>
+                <Input type="date" value={startDate} max={endDate || undefined} onChange={(e) => setStartDate(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">End date</Label>
+                <Input type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} />
+              </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">End date</Label>
-              <Input type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} />
+              <Label className="text-xs">Employees (optional — leave empty for all)</Label>
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto scrollbar-thin">
+                {employees.map((e) => {
+                  const selected = selectedEmpIds.includes(e.id);
+                  return (
+                    <button
+                      key={e.id}
+                      type="button"
+                      onClick={() => setSelectedEmpIds((prev) =>
+                        selected ? prev.filter((id) => id !== e.id) : [...prev, e.id]
+                      )}
+                      className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${selected ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:text-foreground'}`}
+                    >
+                      {e.full_name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* Summary */}
@@ -237,6 +283,20 @@ export default function TripReportDialog({ open, onOpenChange }) {
           </div>
         </div>
         <p className="text-xs text-muted-foreground -mt-2">Period: {rangeLabel}</p>
+
+        {reportType === 'custom' && personTotals.length > 0 && (
+          <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-1.5 -mt-1">
+            <p className="text-xs font-medium">Total distance per person</p>
+            {personTotals.map((p) => (
+              <div key={p.name} className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">
+                  {p.name} <span className="text-muted-foreground/70">({p.trips} trip{p.trips === 1 ? '' : 's'})</span>
+                </span>
+                <span className="font-mono font-medium">{p.distance.toFixed(1)} km</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Preview */}
         <div className="max-h-40 overflow-y-auto scrollbar-thin rounded-lg border border-border">
@@ -345,7 +405,7 @@ export default function TripReportDialog({ open, onOpenChange }) {
                 variant="outline"
                 className="gap-2 shrink-0"
                 onClick={handleSendEmail}
-                disabled={sending || !emailRecipient.trim() || rows.length === 0}
+                disabled={sending || !emailRecipient.trim() || rows.length === 0 || empFilterActive}
               >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 Send
@@ -355,7 +415,7 @@ export default function TripReportDialog({ open, onOpenChange }) {
                 variant="outline"
                 className="gap-2 shrink-0"
                 onClick={handleSchedule}
-                disabled={scheduling || !emailRecipient.trim() || !scheduledTime || rows.length === 0}
+                disabled={scheduling || !emailRecipient.trim() || !scheduledTime || rows.length === 0 || empFilterActive}
               >
                 {scheduling ? <Loader2 className="w-4 h-4 animate-spin" /> : scheduled ? <CheckCircle2 className="w-4 h-4 text-success" /> : <Clock className="w-4 h-4" />}
                 {scheduled ? 'Scheduled' : 'Schedule'}
@@ -368,7 +428,11 @@ export default function TripReportDialog({ open, onOpenChange }) {
               Report scheduled — it will be emailed within 15 minutes of the chosen time.
             </p>
           )}
-          <p className="text-xs text-muted-foreground">Recipient must be a registered Kannaz user.</p>
+          {empFilterActive ? (
+            <p className="text-xs text-warning">Email is unavailable while an employee filter is active — use Download instead.</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">Recipient must be a registered Kannaz user.</p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
