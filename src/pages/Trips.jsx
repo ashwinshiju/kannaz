@@ -115,10 +115,18 @@ export default function Trips() {
     const previous = queryClient.getQueryData(QUERY_KEY);
     try {
       if (editing) {
+        const payload = { ...form };
+        // Recalculate distance whenever both odometer readings are present,
+        // so post-trip odometer edits are reflected in the distance.
+        const startOdo = payload.start_odometer !== '' && payload.start_odometer != null ? Number(payload.start_odometer) : null;
+        const endOdo = payload.end_odometer !== '' && payload.end_odometer != null ? Number(payload.end_odometer) : null;
+        if (startOdo != null && endOdo != null && endOdo >= startOdo) {
+          payload.distance_km = Number((endOdo - startOdo).toFixed(1));
+        }
         queryClient.setQueryData(QUERY_KEY, (old) =>
-          (old || []).map(item => item.id === editing.id ? { ...item, ...form } : item)
+          (old || []).map(item => item.id === editing.id ? { ...item, ...payload } : item)
         );
-        await base44.entities.Trip.update(editing.id, form);
+        await base44.entities.Trip.update(editing.id, payload);
         toast({ title: 'Trip updated' });
       } else {
         const tempId = `temp-${Date.now()}`;
