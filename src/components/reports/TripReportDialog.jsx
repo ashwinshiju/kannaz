@@ -10,6 +10,7 @@ import { FileText, Download, Loader2, Mail, Send, ChevronLeft, ChevronRight, Clo
 import moment from 'moment';
 import { filterTripsByWeek, buildReportRows, getWeekTotals, getEmployeeDistanceTotals, downloadCSV, downloadPDF } from '@/utils/weeklyTripReport';
 import { useToast } from '@/components/ui/use-toast';
+import ReimbursementView from '@/components/reimbursement/ReimbursementView';
 
 const TZ = 240; // Asia/Dubai
 
@@ -17,6 +18,7 @@ const REPORT_TYPES = [
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'custom', label: 'Custom Range' },
+  { value: 'reimbursement', label: 'Reimbursement' },
 ];
 
 export default function TripReportDialog({ open, onOpenChange }) {
@@ -183,7 +185,7 @@ export default function TripReportDialog({ open, onOpenChange }) {
             Report
           </DialogTitle>
           <DialogDescription>
-            Generate a trip report by day, week, or custom date range.
+            Generate a trip report by day, week, or custom date range — or view the monthly vehicle reimbursement summary.
           </DialogDescription>
         </DialogHeader>
 
@@ -200,6 +202,10 @@ export default function TripReportDialog({ open, onOpenChange }) {
           ))}
         </div>
 
+        {reportType === 'reimbursement' ? (
+          <ReimbursementView trips={trips} vehicles={vehicles} isLoadingTrips={isLoading} />
+        ) : (
+        <>
         {/* Date picker per type */}
         {reportType === 'daily' && (
           <div className="grid grid-cols-1 gap-2">
@@ -434,6 +440,8 @@ export default function TripReportDialog({ open, onOpenChange }) {
             <p className="text-xs text-muted-foreground">Recipient must be a registered Kannaz user.</p>
           )}
         </div>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );
