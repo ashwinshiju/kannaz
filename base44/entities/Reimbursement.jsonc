@@ -1,0 +1,119 @@
+{
+  "name": "Reimbursement",
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string",
+      "title": "Month (YYYY-MM)"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "title": "Vehicle ID"
+    },
+    "vehicle_name": {
+      "type": "string",
+      "title": "Vehicle Name"
+    },
+    "employee_name": {
+      "type": "string",
+      "title": "Employee Name"
+    },
+    "fuel_type": {
+      "type": "string",
+      "default": "special_95",
+      "title": "Fuel Type"
+    },
+    "fuel_rate": {
+      "type": "number",
+      "title": "Fuel Rate (AED/L)"
+    },
+    "mileage_kmpl": {
+      "type": "number",
+      "default": 14,
+      "title": "Mileage (km/L)"
+    },
+    "total_distance_km": {
+      "type": "number",
+      "title": "Total Distance (km)"
+    },
+    "fuel_litres": {
+      "type": "number",
+      "title": "Fuel (L)"
+    },
+    "amount_due": {
+      "type": "number",
+      "title": "Amount Due (AED)"
+    },
+    "paid_amount": {
+      "type": "number",
+      "title": "Paid Amount (AED)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "unpaid",
+        "paid"
+      ],
+      "default": "unpaid",
+      "title": "Status"
+    },
+    "downloaded_at": {
+      "type": "string",
+      "title": "Report Downloaded At"
+    }
+  },
+  "required": [
+    "month",
+    "vehicle_id",
+    "vehicle_name"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "manager"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "manager"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "manager"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
