@@ -18,7 +18,7 @@ const REPORT_TYPES = [
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'custom', label: 'Custom Range' },
-  { value: 'reimbursement', label: 'Reimbursement' },
+  { value: 'reimbursement', label: 'Monthly' },
 ];
 
 export default function TripReportDialog({ open, onOpenChange }) {
