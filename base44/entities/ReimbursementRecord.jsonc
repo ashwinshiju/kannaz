@@ -1,0 +1,98 @@
+{
+  "name": "ReimbursementRecord",
+  "type": "object",
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "title": "Vehicle ID"
+    },
+    "vehicle_name": {
+      "type": "string",
+      "title": "Vehicle Name"
+    },
+    "month_key": {
+      "type": "string",
+      "title": "Month (YYYY-MM)"
+    },
+    "month_label": {
+      "type": "string",
+      "title": "Month Label"
+    },
+    "distance_km": {
+      "type": "number",
+      "title": "Distance (km)"
+    },
+    "rate": {
+      "type": "number",
+      "title": "Fuel Rate (AED/L)"
+    },
+    "mileage": {
+      "type": "number",
+      "title": "Mileage (km/L)"
+    },
+    "amount": {
+      "type": "number",
+      "title": "Amount (AED)"
+    },
+    "is_paid": {
+      "type": "boolean",
+      "default": true,
+      "title": "Paid"
+    },
+    "paid_at": {
+      "type": "string",
+      "title": "Paid At"
+    },
+    "paid_by": {
+      "type": "string",
+      "title": "Paid By"
+    }
+  },
+  "required": [
+    "vehicle_name",
+    "month_key",
+    "distance_km",
+    "rate",
+    "mileage",
+    "amount"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": null,
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
