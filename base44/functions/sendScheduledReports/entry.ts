@@ -49,7 +49,7 @@ export default async function(req) {
         const subject = `Weekly Trip Report – ${report.week_label}`;
         const emailBody = buildEmailBody(rows, report.week_label, totalDistance, totalMinutes);
 
-        await base44.integrations.Core.SendEmail({
+        await base44.asServiceRole.integrations.Core.SendEmail({
           to: report.recipient_email,
           subject,
           body: emailBody,

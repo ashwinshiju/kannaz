@@ -56,7 +56,7 @@ export default async function(req) {
     const subject = `Trip Report – ${range_label}`;
     const emailBody = buildEmailBody(rows, range_label, totalDistance, totalMinutes);
 
-    await base44.integrations.Core.SendEmail({
+    await base44.asServiceRole.integrations.Core.SendEmail({
       to: recipient_email,
       subject,
       body: emailBody,
