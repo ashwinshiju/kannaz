@@ -1,0 +1,95 @@
+{
+  "name": "Reimbursement",
+  "type": "object",
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "title": "Vehicle ID"
+    },
+    "vehicle_name": {
+      "type": "string",
+      "title": "Vehicle Name"
+    },
+    "month": {
+      "type": "string",
+      "title": "Month (YYYY-MM)"
+    },
+    "total_distance_km": {
+      "type": "number",
+      "title": "Total Distance (km)"
+    },
+    "fuel_type": {
+      "type": "string",
+      "enum": [
+        "super_98",
+        "special_95",
+        "eplus_91",
+        "diesel"
+      ],
+      "default": "special_95",
+      "title": "Fuel Type"
+    },
+    "fuel_rate": {
+      "type": "number",
+      "title": "Fuel Rate (AED/L)"
+    },
+    "mileage_kmpl": {
+      "type": "number",
+      "default": 14,
+      "title": "Mileage (km/L)"
+    },
+    "reimbursement_amount": {
+      "type": "number",
+      "title": "Reimbursement Amount (AED)"
+    },
+    "paid_amount": {
+      "type": "number",
+      "title": "Paid Amount (AED)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "paid",
+        "unpaid"
+      ],
+      "default": "unpaid",
+      "title": "Status"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "vehicle_name",
+    "month"
+  ],
+  "rls": {
+    "create": null,
+    "read": null,
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
