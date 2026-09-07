@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ClipboardList, FileText, Banknote } from 'lucide-react';
+import { ClipboardList, FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/shared/PageHeader';
 import TripReportDialog from '@/components/reports/TripReportDialog';
-import CashDisbursementDialog from '@/components/reports/CashDisbursementDialog';
 import DataTable from '@/components/shared/DataTable';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
@@ -29,7 +28,6 @@ export default function AuditLog() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reportOpen, setReportOpen] = useState(false);
-  const [disbursementOpen, setDisbursementOpen] = useState(false);
 
   const { data: employees = [] } = useQuery({
     queryKey: ['employees'],
@@ -57,14 +55,7 @@ export default function AuditLog() {
         action={canManage ? () => setReportOpen(true) : null}
         actionLabel="Report"
         actionIcon={FileText}
-      >
-        {canManage && (
-          <Button variant="outline" onClick={() => setDisbursementOpen(true)} className="gap-2">
-            <Banknote className="w-4 h-4" />
-            Disbursement
-          </Button>
-        )}
-      </PageHeader>
+      />
       <DataTable
         data={data} columns={columns} searchPlaceholder="Search audit log..."
         filters={[
@@ -78,7 +69,6 @@ export default function AuditLog() {
       />
       </PullToRefresh>
       {canManage && <TripReportDialog open={reportOpen} onOpenChange={setReportOpen} />}
-      {canManage && <CashDisbursementDialog open={disbursementOpen} onOpenChange={setDisbursementOpen} />}
     </div>
   );
 }
