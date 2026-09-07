@@ -6,6 +6,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import MobileNavHeader from '@/components/layout/MobileNavHeader';
+import TripStartNotifier from '@/components/trips/TripStartNotifier';
 import { cn } from '@/lib/utils';
 
 export default function AppLayout() {
@@ -58,6 +59,7 @@ export default function AppLayout() {
         </main>
 
         <MobileBottomNav />
+        <TripStartNotifier />
       </div>
     </TabStackProvider>
   );
