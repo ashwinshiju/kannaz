@@ -1,0 +1,75 @@
+{
+  "name": "Disbursement",
+  "type": "object",
+  "properties": {
+    "employee_name": {
+      "type": "string",
+      "title": "Employee Name"
+    },
+    "month": {
+      "type": "string",
+      "title": "Month (YYYY-MM)"
+    },
+    "total_distance_km": {
+      "type": "number",
+      "title": "Total Distance (km)"
+    },
+    "fuel_rate": {
+      "type": "number",
+      "title": "Fuel Rate (AED/L)"
+    },
+    "mileage_km_per_litre": {
+      "type": "number",
+      "title": "Mileage (km/L)"
+    },
+    "amount": {
+      "type": "number",
+      "title": "Amount (AED)"
+    },
+    "paid": {
+      "type": "boolean",
+      "default": false,
+      "title": "Paid"
+    },
+    "paid_at": {
+      "type": "string",
+      "title": "Paid At"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "employee_name",
+    "month"
+  ],
+  "rls": {
+    "create": null,
+    "read": null,
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
