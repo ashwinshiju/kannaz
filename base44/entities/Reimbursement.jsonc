@@ -1,0 +1,113 @@
+{
+  "name": "Reimbursement",
+  "type": "object",
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "title": "Vehicle ID"
+    },
+    "vehicle_name": {
+      "type": "string",
+      "title": "Vehicle Name"
+    },
+    "month": {
+      "type": "string",
+      "title": "Month (YYYY-MM)"
+    },
+    "total_distance_km": {
+      "type": "number",
+      "title": "Total Distance (km)"
+    },
+    "fuel_rate": {
+      "type": "number",
+      "title": "Fuel Rate (AED/L)"
+    },
+    "mileage_kmpl": {
+      "type": "number",
+      "title": "Mileage (km/L)"
+    },
+    "amount": {
+      "type": "number",
+      "title": "Computed Amount (AED)"
+    },
+    "paid_amount": {
+      "type": "number",
+      "title": "Paid Amount (AED)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "paid",
+        "unpaid"
+      ],
+      "default": "paid",
+      "title": "Status"
+    },
+    "paid_at": {
+      "type": "string",
+      "title": "Paid At"
+    }
+  },
+  "required": [
+    "vehicle_id",
+    "month"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "manager"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "manager"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "manager"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "manager"
+          }
+        }
+      ]
+    }
+  }
+}
